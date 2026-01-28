@@ -184,6 +184,13 @@ const DigitalAlchemy: React.FC = () => {
                         The process of performing physical data operations to mirror internal intent. By "consuming" source files and transmogrifying ritual space, the practitioner anchors their will into the physical world through the computer as a consecrated ritual tool.
                     </div>
                 </div>
+                <div className="info-box-container warning">
+                    <span className="warning-label">DATA WARNING</span>
+                    <div className="info-tooltip warning">
+                        <h4>Destructive Operation</h4>
+                        This feature can overwrite or delete files on your device if you are not careful. Use with extreme caution. Ensure you have backed up any data you do not wish to sacrifice to the engine before initiating a Working.
+                    </div>
+                </div>
             </div>
             <div className="control-group">
                 <button className="secondary" onClick={selectSource}>

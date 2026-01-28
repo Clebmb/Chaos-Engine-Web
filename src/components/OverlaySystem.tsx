@@ -103,10 +103,17 @@ const OverlaySystem: React.FC<OverlaySystemProps> = ({
 
                 if (randomTimerRef.current >= interval) {
                     randomTimerRef.current = 0;
-                    setLocalPos({
-                        x: 10 + Math.random() * 80,
-                        y: 10 + Math.random() * 80
-                    });
+                    const container = containerRef.current;
+                    if (container) {
+                        const rect = container.getBoundingClientRect();
+                        const halfSizePctX = (size / 2 / rect.width) * 100;
+                        const halfSizePctY = (size / 2 / rect.height) * 100;
+
+                        setLocalPos({
+                            x: halfSizePctX + Math.random() * (100 - 2 * halfSizePctX),
+                            y: halfSizePctY + Math.random() * (100 - 2 * halfSizePctY)
+                        });
+                    }
                 }
             }
 

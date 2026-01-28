@@ -73,21 +73,35 @@ canvas {
 }
 
 .oracle-bar {
-  height: 40px;
   background: #000;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2rem;
+  justify-content: space-between;
+  padding: 0 1rem;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.1rem;
   position: relative;
-  /* For absolute positioning of the logo */
+  height: 40px;
+  z-index: 100;
 }
 
-/* ... existing label styles ... */
+.oracle-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.oracle-data {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .oracle-label {
   color: #888;
 }
@@ -110,53 +124,48 @@ canvas {
   z-index: 20;
 }
 
-.coffee-link {
-  position: absolute;
-  left: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: filter 0.3s ease;
-}
-
-.clebmb-link:active,
-.coffee-link:active {
-  filter: drop-shadow(0 0 8px var(--accent-color));
-}
-
-.clebmb-logo,
-.coffee-logo {
+.clebmb-logo {
   height: 24px;
   width: auto;
   opacity: 0.8;
   transition: opacity 0.3s ease;
 }
 
-.clebmb-logo:hover,
-.coffee-logo:hover {
+.clebmb-logo:hover {
   opacity: 1;
 }
 
+.coffee-link,
 .source-link {
-  position: absolute;
-  right: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: filter 0.3s ease;
 }
 
+@media (min-width: 769px) {
+  .source-link {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+.coffee-link:active,
 .source-link:active {
   filter: drop-shadow(0 0 8px var(--accent-color));
 }
 
+.coffee-logo,
 .source-logo {
-  height: 24px;
+  height: 20px;
   width: auto;
   opacity: 0.8;
   transition: opacity 0.3s ease;
 }
 
+.coffee-logo:hover,
 .source-logo:hover {
   opacity: 1;
 }
@@ -622,4 +631,125 @@ input[type="range"] {
 .oracle-bar .info-tooltip {
   bottom: auto;
   top: 150%;
+}
+
+.warning-label {
+  color: #ff4444;
+  font-weight: bold;
+  font-size: 0.65rem;
+  margin-left: 0.5rem;
+  cursor: help;
+  text-shadow: 0 0 5px rgba(255, 68, 68, 0.4);
+  transition: color 0.3s;
+}
+
+.warning-label:hover {
+  color: #ff0000;
+}
+
+.info-tooltip.warning {
+  border-color: #ff4444;
+  width: 220px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 125%;
+}
+
+.info-tooltip.warning h4 {
+  color: #ff4444;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    order: 1;
+  }
+
+  .main-view {
+    height: 50vh;
+    flex: none;
+    order: 2;
+  }
+
+  .oracle-bar {
+    height: auto;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    border-bottom: none;
+  }
+
+  .oracle-links {
+    width: 100%;
+    height: 32px;
+    background: #050505;
+    border-bottom: 1px solid #111;
+    justify-content: center;
+    gap: 2rem;
+  }
+
+  .oracle-data {
+    width: 100%;
+    height: 32px;
+    background: #000;
+    position: static;
+    transform: none;
+    justify-content: center;
+    gap: 1rem;
+    font-size: 0.65rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .coffee-logo,
+  .source-logo {
+    height: 18px;
+  }
+
+  .oracle-bar .info-box-container {
+    margin-left: 0.1rem;
+    margin-right: 0.5rem;
+  }
+
+  .oracle-bar .info-tooltip {
+    width: 200px;
+  }
+
+  /* Specifically fix the second (Synchronicity) tooltip from going off-screen to the right */
+  .oracle-data .info-box-container:last-child .info-tooltip {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .sigil-scribe-modal {
+    top: 2vh;
+    left: 2vw;
+    width: 96vw;
+    height: 96vh;
+    padding: 1rem;
+  }
+
+  .button-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clebmb-link {
+    position: static;
+    margin-bottom: 1rem;
+  }
+
+  .app-logo {
+    margin-top: 0;
+  }
 }

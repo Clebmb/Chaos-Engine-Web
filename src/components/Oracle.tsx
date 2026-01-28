@@ -28,33 +28,36 @@ const Oracle: React.FC = () => {
 
     return (
         <div className="oracle-bar">
-            <a href="https://ko-fi.com/clebmb" target="_blank" rel="noopener noreferrer" className="coffee-link">
-                <img src="/assets/coffee.png" alt="Buy Me a Coffee" className="coffee-logo" />
-            </a>
-
-            <span className="oracle-label">Quantum Seed:</span>
-            <span className="oracle-value">{seed}</span>
-            <div className="info-box-container">
-                <span className="info-icon">?</span>
-                <div className="info-tooltip">
-                    <h4>The First Gnosis</h4>
-                    A randomized variable representing high-entropy quantum noise. In Chaos Magick, it bypasses the "Psychic Censor," providing a clean state for manifestation free from conscious bias.
-                </div>
+            <div className="oracle-links">
+                <a href="https://ko-fi.com/clebmb" target="_blank" rel="noopener noreferrer" className="coffee-link">
+                    <img src="/assets/coffee.png" alt="Buy Me a Coffee" className="coffee-logo" />
+                </a>
+                <a href="https://github.com/Clebmb/Chaos-Engine-Web" target="_blank" rel="noopener noreferrer" className="source-link">
+                    <img src="/assets/sourcecode.png" alt="Source Code" className="source-logo" />
+                </a>
             </div>
 
-            <span className="oracle-label">Oracle:</span>
-            <span className="oracle-value">{oracle}</span>
-            <div className="info-box-container">
-                <span className="info-icon">?</span>
-                <div className="info-tooltip">
-                    <h4>Synchronicity Stream</h4>
-                    A real-time scrying mirror derived from quantum entropy and temporal data. It translates raw chaos into symbolic hexadecimal insights, used to detect synchronicities and ritual alignment.
+            <div className="oracle-data">
+                <span className="oracle-label">Quantum Seed:</span>
+                <span className="oracle-value">{seed}</span>
+                <div className="info-box-container">
+                    <span className="info-icon">?</span>
+                    <div className="info-tooltip">
+                        <h4>The First Gnosis</h4>
+                        A randomized variable representing high-entropy quantum noise. In Chaos Magick, it bypasses the "Psychic Censor," providing a clean state for manifestation free from conscious bias.
+                    </div>
+                </div>
+
+                <span className="oracle-label">Oracle:</span>
+                <span className="oracle-value">{oracle}</span>
+                <div className="info-box-container">
+                    <span className="info-icon">?</span>
+                    <div className="info-tooltip">
+                        <h4>Synchronicity Stream</h4>
+                        A real-time scrying mirror derived from quantum entropy and temporal data. It translates raw chaos into symbolic hexadecimal insights, used to detect synchronicities and ritual alignment.
+                    </div>
                 </div>
             </div>
-
-            <a href="https://github.com/Clebmb/Chaos-Engine-Web" target="_blank" rel="noopener noreferrer" className="source-link">
-                <img src="/assets/sourcecode.png" alt="Source Code" className="source-logo" />
-            </a>
         </div>
     );
 };

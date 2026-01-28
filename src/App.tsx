@@ -135,7 +135,8 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setOverlay(prev => ({ ...prev, url }));
+      const isMobile = window.innerWidth <= 768;
+      setOverlay(prev => ({ ...prev, url, size: isMobile ? 65 : 200 }));
     }
   };
 
@@ -183,6 +184,63 @@ const App: React.FC = () => {
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  const lastTouchDist = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastTouchDist.current = null;
+    } else if (e.touches.length === 2) {
+      setIsDragging(false);
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lastTouchDist.current = dist;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDragging) {
+      const dx = e.touches[0].clientX - lastMousePos.current.x;
+      const dy = e.touches[0].clientY - lastMousePos.current.y;
+      lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
+      setState(prev => {
+        const aspect = (canvasRef.current?.width || 800) / (canvasRef.current?.height || 600);
+        const moveX = (dx / (canvasRef.current?.width || 800)) * prev.zoom * aspect;
+        const moveY = (dy / (canvasRef.current?.height || 600)) * prev.zoom;
+        return {
+          ...prev,
+          center: [prev.center[0] - moveX, prev.center[1] + moveY]
+        };
+      });
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+
+      if (lastTouchDist.current !== null) {
+        const delta = lastTouchDist.current / dist;
+        // Sensitivity control
+        const zoomChange = Math.pow(delta, 0.5);
+
+        setState(prev => ({
+          ...prev,
+          zoom: prev.zoom * zoomChange
+        }));
+      }
+      lastTouchDist.current = dist;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    lastTouchDist.current = null;
   };
 
   return (
@@ -356,6 +414,10 @@ const App: React.FC = () => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ touchAction: 'none' }}
         >
           <canvas ref={canvasRef} />
           <OverlaySystem
