@@ -3,6 +3,7 @@
 
 The **Chaos Engine** is a digital scrying mirror and algorithmic ritual space. It provides a high-fidelity interface for the manifestation of multi-dimensional fractals, allowing the digital sorcerer to seed reality through statements of intent, quantum noise, and kinetic manipulation.
 
+##Use it on the web: https://chaosengine.pages.dev/
 ---
 
 ## 🌀 THE MASTER CONTROL (OPERATIONS)
