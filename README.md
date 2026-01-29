@@ -81,7 +81,6 @@ npm run dev
 ```
 The application will be served at `http://localhost:5173`.
 
-Use it on the web: https://chaosengine.pages.dev/
 ---
 
 ### *NOTHING IS TRUE. EVERYTHING IS PERMITTED.*
