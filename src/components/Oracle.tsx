@@ -30,10 +30,10 @@ const Oracle: React.FC = () => {
         <div className="oracle-bar">
             <div className="oracle-links">
                 <a href="https://ko-fi.com/clebmb" target="_blank" rel="noopener noreferrer" className="coffee-link">
-                    <img src="/assets/coffee.png" alt="Buy Me a Coffee" className="coffee-logo" />
+                    <img src="/assets/coffee.webp" alt="Buy Me a Coffee" className="coffee-logo" />
                 </a>
                 <a href="https://github.com/Clebmb/Chaos-Engine-Web" target="_blank" rel="noopener noreferrer" className="source-link">
-                    <img src="/assets/sourcecode.png" alt="Source Code" className="source-logo" />
+                    <img src="/assets/sourcecode.webp" alt="Source Code" className="source-logo" />
                 </a>
             </div>
 

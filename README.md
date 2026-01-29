@@ -1,117 +1,85 @@
-# ⛧ CHAOS ENGINE ⛧
-## *Geometric Gnosis & Temporal Transmutation*
+# Chaos Engine
 
-The **Chaos Engine** is a digital scrying mirror and algorithmic ritual space. It provides a high-fidelity interface for the manifestation of multi-dimensional fractals, allowing the digital sorcerer to seed reality through statements of intent, quantum noise, and kinetic manipulation.
+Chaos Engine is a web-based interactive fractal renderer and experimental workspace built with React and Vite. It serves as a tool for Chaos Magick practitioners to facilitate sigilization, reach states of gnosis through high-entropy visual stimuli, and anchor ritual intent into physical reality through data manipulation. By mapping statements of intent to complex fractal coordinates, users can create unique visual focal points for scrying and manifestation.
 
----
+## Try it on the web: https://chaosengine.pages.dev
 
-## 🌀 THE MASTER CONTROL (OPERATIONS)
+## Features
 
-### 1. SEEDING THE ENGINE (INPUT)
-The fractal reality is birthed from the crystallization of your will:
-*   **Statement of Intent**: Enter your desire into the terminal. The Engine transmutes your alphanumeric vibrations into geometric coordinates and Julia constants.
-*   **Seed Engine**: Executes the transmutation, realigning the fractal archetype to your specific intent.
+### Fractal Exploration
+- **Multiple Fractal Types**: Supports Mandelbrot, Julia, Burning Ship, Tricorn, Celtic, Buffalo, and Perpendicular sets.
+- **Dynamic Seeding**: Julia set constants and view coordinates can be derived from text input strings.
+- **Adjustable Resolution**: Control the maximum iteration count (50-500) to balance visual detail with performance.
+- **Navigation**:
+    - **PC**: Click and drag to pan; use the mouse wheel to zoom.
+    - **Mobile**: Single-touch to pan; pinch-to-zoom.
 
-### 2. ARCHETYPAL SELECTION
-Cycle through the primary geometric foundations of the void:
-*   **Fractal Types**: Your statement of intent will automatically toggle your fractal type to the most appropriate archetypebetween based on your statement of intent. *Mandelbrot*, *Julia*, *Burning Ship*, *Tricorn*, *Celtic*, *Buffalo*, and *Perpendicular* archetypes.
-*   **Fractal Resolution**: Control the depth of the recursive loop (50-500 iterations). Higher resolution grants deeper gnosis at the cost of kinetic fluidness.
+**Ritual Utility**: The infinite recursion of fractals serves as a visual focus for scrying. Mapping intent to specific coordinates creates a unique geometric signature for each ritual working, anchoring abstract desire into a complex mathematical structure.
 
-### 3. THE KINETIC FLOW (NAVIGATION)
-*   **PC Manipulation**: Drag the mouse to traverse the infinite; scroll to dive deeper into the recursive singularity.
-*   **Mobile Gnosis**: Single-touch to navigate; two-finger pinch to expand or contract the visual reality.
+### Visual Effects (Post-Processing)
+Real-time filters and shaders applied to the render:
+- **Strobe**: Rhythmic luminosity inversion.
+- **Psychedelic**: Procedural color cycling.
+- **Glitch**: Non-linear scanline and offset distortions.
+- **Neon & RGB Shift**: Edge highlighting and chromatic aberration effects.
+- **Vignette**: Radial darkening around the viewport edges.
 
----
+**Ritual Utility**: These effects are designed to bypass the "psychic censor" by disrupting standard visual perception. Rapid changes in luminosity (strobe) and procedural distortion (glitch) facilitate the induction of trance states (gnosis) required for effective manifestation.
 
-## 🧪 VISUAL TRANSMUTATION (POST-EFFECTS)
+### Audio System
+- **Audio Player**: Supports playback of pre-loaded tracks or user-uploaded audio files.
+- **Frequency Generator**: A sine-wave oscillator with manual frequency (Hz) and volume control.
 
-Infuse the fractal with sensory distortion to bypass the psychic censor:
-*   **Strobe**: A rhythmic inversion of luminosity to induce trance.
-*   **Psychedelic**: A continuous shifting through the visible color frequencies.
-*   **Reality Tear (Glitch)**: Fragment the visual stream into non-linear slices.
-*   **The Void (Vignette)**: Focus the energy toward the center as the edges dissolve into darkness.
+**Ritual Utility**: Audio serves as a sensory boundary for the ritual space. The frequency generator allows for brainwave entrainment using resonant frequencies (e.g., Solfeggio scales), helping the practitioner align their internal vibration with their external intent.
 
----
+### Image Overlay System
+- **Custom Overlays**: Upload PNG or GIF images to overlay onto the fractal canvas.
+- **Motion Modes**:
+    - **Manual**: Drag and drop the overlay to any position.
+    - **Random Flash**: The overlay teleports to random coordinates at regular intervals.
+    - **DVD Bounce**: The overlay moves in a continuous bouncing path within the viewport boundaries.
 
-## 🔊 AURAL GNOSIS (AUDIO FEATURES)
+**Ritual Utility**: Overlays allow the practitioner to project specific symbols, sigils, or targets onto the generative fractal field. The varying motion modes provide different levels of kinetic energy for the symbol, from static focus to high-entropy movement.
 
-Sound is a carrier wave for intent. The Chaos Engine provides two primary auditory modules:
+### Sigil Scribe
+The Sigil Scribe process converts text strings into specific Julia set coordinates. This allows users to map specific "statements of intent" to unique, reproducible fractal landscapes.
 
-### 1. AURAL BACKDROP (MUSICAL INFUSION)
-*   **Ritual Music**: Cycle through pre-loaded ritual tracks or upload your own sonic vessels to bridge the gap between digital and physical senses.
-*   **Volume Attenuation**: Fine control over the gain level to ensure the audio supports, rather than distracts from, the scrying session.
+**Ritual Utility**: It automates the core chaos magick technique of reducing a complex desire into an abstract form. By immediately manifesting this form as a world, it provides a direct feedback loop between the statement of intent and the resulting visual gnosis.
 
-### 2. FREQUENCY GENERATOR (SOLFEGGIO & VIBRATION)
-*   **Hertz Control**: Manually input specific frequencies (e.g., 432Hz for harmonic alignment, 528Hz for DNA transmutation).
-*   **Sonic Emission**: Emit a pure sine wave tone to cleanse the ritual space and resonate with the geometric structures of the fractal.
+### Digital Alchemy (File Management)
+**WARNING: This feature performs physical file operations using the File System Access API. Use with caution.**
 
----
+Digital Alchemy automates the reorganization of local folders:
+1. **Archive**: Existing contents of the "Ritual Space" (target folder) are moved into a new subfolder with a generated unique ID.
+2. **Transfer**: All files and folders from the "Source of Intent" (source folder) are moved into the "Ritual Space".
+3. **Consuming Source**: The original files in the "Source of Intent" folder are removed.
+4. **Void Marker**: A `VOID_MARKER` text file is created in the now-empty source folder to indicate the process is complete.
 
-## 🖼️ THE OVERLAY SYSTEM (DIVINATION)
+**Ritual Utility**: This feature provides physical "proof" of the ritual working. The psychological act of "consuming" source data and archiving the "old reality" anchors the practitioner's will in the tangible world, creating a permanent record of the paradigm shift.
 
-Summon external symbols into the fractal field:
-*   **Manifestation**: Upload a PNG or GIF to act as a focus.
-*   **Motion Rhythms**:
-    *   *Manual*: Drag the focus across the canvas.
-    *   *Random Flash*: The symbol teleports across the void, appearing and vanishing.
-    *   *DVD Bounce*: Path of kinetic persistence, perfectly contained within the screen boundaries.
+### Oracle Data
+Displays real-time entropy and temporal data:
+- **Quantum Seed**: A high-entropy variable used for algorithmic randomization.
+- **Oracle Stream**: A hexadecimal string derived from entropy and timing data.
 
-## � THE SIGIL SCRIBE (RITUAL ASSISTANT)
+**Ritual Utility**: High-entropy data sources provide a "clean" seed for randomization, free from the practitioner's conscious bias. The Oracle Stream is used to detect "synchronicities"—meaningful coincidences in the data that signal alignment with the intended goal.
 
-A specialized subsystem for classic sigilization. It automates the reduction of complex intent into skeletal, potent forms:
-1.  **Intent Processing**: Input your desire directly into the Scribe.
-2.  **Glyph Extraction**: The system analyzes the intent, extracting unique geometric nodes.
-3.  **Engage**: Once the sigil is forged, "Engage" it to immediately seed the Chaos Engine with the sigil's unique Julia coordinates, manifesting your intent as an infinite recursive landscape.
+## Development Setup
 
----
+### Prerequisites
+- Node.js (Latest LTS)
+- npm
 
-## ⚗️ DIGITAL ALCHEMY (TRANSUBSTANTIATION)
+### Installation
+```bash
+npm install
+```
 
-**CAUTION: THIS SYSTEM CAN OVERWRITE OR DELETE FILES ON YOUR DEVICE IF YOU ARE NOT CAREFUL**
-
-Digital Alchemy is the process of performing file-system operations that mirror internal transmutations. By selecting a **Source of Intent** and a **Ritual Space**, you are anchoring your will into the physical hardware of your vessel.
-
-### THE STAGES OF ALCHEMY:
-1.  **SIGILIZATION**: The previous reality (current contents of the Ritual Space) is condensed into a new, cryptic, and sigilized folder.
-2.  **MANIFESTATION**: The contents of your Source of Intent are manifested into the Ritual Space.
-3.  **DISSOLUTION**: The Source of Intent is *dissolved*—its contents are vaporized to ensure focus remains on the manifested reality.
-
-### ⚠ WARNINGS OF THE VOID:
-*   **CONSUMPTION**: The "Source of Intent" folder will be **emptied** of all files and folders. They are physically deleted from the original location.
-*   **VOID MARKER**: A `VOID_MARKER` file will be left in the Source folder as a hollow shell, marking the place where the energy was drained.
-*   **TRANSUBSTANTIATION**: Once accepted, this paradigm shift **CANNOT BE UNDONE** through this interface. The old files in the Ritual Space are archived, but the Source files are gone. Ensure you have backed up any data you do not wish to sacrifice to the engine.
-
----
-
-## 👁️ THE ORACLE BAR (DATA STREAM)
-
-A real-time scrying mirror observing the engine's pulse:
-*   **Quantum Seed**: A high-entropy variable representing the First Gnosis, bypasses conscious bias.
-*   **Oracle Stream**: A hexadecimal insight derived from quantum noise and temporal data; use it to detect synchronicities and ritual alignment.
-
----
-
-## 🛠️ THE RITUAL VOID (SELF HOSTING SETUP)
-
-To manifest this engine within your own vessel:
-
-1.  **Prepare the Environment**:
-    ```bash
-    npm install
-    ```
-2.  **Ignite the Engine**:
-    ```bash
-    npm run dev
-    ```
-3.  The engine will manifest at `localhost`. Approach with clear intent.
-
----
-
-## ⚖️ THE COVENANT (LICENSE)
-
-This software is an instrument of freedom, aesthetic exploration, and reality expansion. 
-
-*Forged by **Clebmb**.*
+### Running Locally
+```bash
+npm run dev
+```
+The application will be served at `http://localhost:5173`.
 
 ---
 

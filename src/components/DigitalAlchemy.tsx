@@ -187,8 +187,8 @@ const DigitalAlchemy: React.FC = () => {
                 <div className="info-box-container warning">
                     <span className="warning-label">DATA WARNING</span>
                     <div className="info-tooltip warning">
-                        <h4>Destructive Operation</h4>
-                        This feature can overwrite or delete files on your device if you are not careful. Use with extreme caution. Ensure you have backed up any data you do not wish to sacrifice to the engine before initiating a Working.
+                        <h4>Data Movement</h4>
+                        Data from your source folder will move into the ritual space folder. Any data previously in the ritual space will be moved into a new subfolder with a randomly sigilized name. Do not use this on important folders; only use folders specifically involved in your ritual.
                     </div>
                 </div>
             </div>

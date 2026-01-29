@@ -247,9 +247,9 @@ const App: React.FC = () => {
     <div className="app-container">
       <aside className="sidebar">
         <a href="https://clebmb.pages.dev" target="_blank" rel="noopener noreferrer" className="clebmb-link">
-          <img src="/assets/clebmb.png" alt="Clebmb" className="clebmb-logo" />
+          <img src="/assets/clebmb.webp" alt="Clebmb" className="clebmb-logo" />
         </a>
-        <img src="/assets/logo.png" alt="Chaos Engine" className="app-logo" />
+        <img src="/assets/logo.webp" alt="Chaos Engine" className="app-logo" />
 
         <div className="section-title">Master Control</div>
         <div className="control-group">
@@ -391,7 +391,7 @@ const App: React.FC = () => {
         <div className="section-title">Ritual Tools</div>
         <div className="control-group">
           <a href="https://sigilarium.pages.dev" target="_blank" rel="noopener noreferrer" className="sigilarium-link">
-            <img src="/assets/sigilarium.png" alt="Sigilarium" className="sigilarium-logo" />
+            <img src="/assets/sigilarium.webp" alt="Sigilarium" className="sigilarium-logo" />
           </a>
           <button className="secondary" onClick={() => setShowScribe(true)}>Sigil Scribe</button>
           <button className="secondary" onClick={() => setIsAnimating(!isAnimating)}>
