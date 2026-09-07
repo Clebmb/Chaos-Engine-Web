@@ -1,0 +1,824 @@
+/* ============================================================
+   THEME SKINS
+   One [data-theme="..."] block per theme. A block only needs to
+   override what makes it unique — anything it leaves alone keeps
+   the Crimson 95 default. Section 2 is the *menu itself*, which
+   must look consistent across themes; each block may recolor the
+   menu via --menu-* hooks.
+   ============================================================ */
+
+/* ---------- 1. Menu chrome (theme-agnostic, recolorable) ---------- */
+
+.theme-switcher {
+  position: relative;
+  display: inline-flex;
+}
+
+.theme-brush {
+  background: var(--panel-raised);
+  color: var(--soft-text);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0 0.4rem;
+  min-width: 24px;
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  text-shadow: none;
+  transition: none;
+}
+
+.theme-brush:hover {
+  background: var(--hover-bg);
+  color: var(--hover-text);
+}
+
+.theme-brush:active {
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  transform: translate(1px, 1px);
+}
+
+/* Desktop: sit beside the absolutely-positioned source-code logo
+   (right: 1rem, ~104px wide → ends ~120px from the edge).
+   Mobile: fall back into the static link row. */
+@media (min-width: 769px) {
+  .theme-switcher {
+    position: absolute;
+    right: 7.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 130;
+  }
+}
+
+.theme-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 264px;
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--menu-bg, var(--panel-bg-solid));
+  color: var(--menu-text, var(--fg-color));
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 4px 4px 0 rgba(0, 0, 0, 0.7), 0 0 24px var(--menu-glow, var(--accent-glow));
+  z-index: 140;
+  font-family: var(--font-family);
+}
+
+.theme-menu-title {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: bold;
+  letter-spacing: 0.25rem;
+  padding: 0.45rem 0.5rem;
+  color: var(--menu-head, var(--accent-color));
+  background: var(--menu-head-bg, var(--titlebar-grad));
+  text-shadow: 0 0 6px var(--accent-glow);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.theme-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 2px solid transparent;
+  color: inherit;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0.02rem;
+  text-shadow: none;
+  box-shadow: none;
+  transition: none;
+}
+
+.theme-item:hover {
+  background: var(--menu-hover-bg, var(--hover-bg));
+  color: var(--menu-hover-text, var(--fg-color));
+  border-color: var(--menu-hover-border, var(--border-color));
+  transform: none;
+}
+
+.theme-item.active {
+  background: var(--menu-active-bg, var(--panel-raised));
+  border-color: var(--menu-active-border, var(--accent-color));
+  color: var(--menu-active-text, var(--fg-color));
+}
+
+.theme-swatch {
+  flex-shrink: 0;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid rgba(0, 0, 0, 0.9);
+  outline: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.theme-swatch i {
+  display: block;
+  width: 16px;
+  height: 6px;
+}
+
+.theme-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.theme-item-label {
+  font-weight: bold;
+  font-size: 0.68rem;
+}
+
+.theme-item-mark {
+  color: var(--menu-head, var(--accent-color));
+  font-size: 0.6rem;
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* Mobile: menu drops below the bar strip */
+@media (max-width: 768px) {
+  .theme-switcher {
+    position: static;
+  }
+
+  .theme-menu {
+    position: fixed;
+    top: 32px;
+    right: 6px;
+    left: auto;
+    width: min(300px, calc(100vw - 12px));
+    z-index: 300;
+  }
+}
+
+/* ---------- 2. Themes ---------- */
+
+/* ***** BLUEWIN 95 ***** — the pristine original desktop */
+:root[data-theme='bluewin'] {
+  color-scheme: light;
+  --bg-color: #008080;
+  --fg-color: #000000;
+  --accent-color: #000080;
+  --accent-glow: rgba(0, 0, 128, 0.35);
+  --panel-bg: #c0c0c0;
+  --panel-bg-solid: #c0c0c0;
+  --panel-raised: #d4d0c8;
+  --border-color: #808080;
+  --border-light: #ffffff;
+  --border-dark: #404040;
+  --dim-text: #4a4a4a;
+  --titlebar-grad: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  --soft-text: #ffffff;
+  --hover-bg: #d4d0c8;
+  --hover-text: #000080;
+  --inset-hi: #dfdfdf;
+  --lift-shadow: rgba(0, 0, 0, 0.4);
+  --window-glow: transparent;
+  --wallpaper: #008080;
+  --scanlines: none;
+  --bevel-light: #ffffff;
+  --bevel-dark: #404040;
+  --swatch-outline: #000000;
+  --tip-text: #2a2a2a;
+  --breath-fill: rgba(0, 0, 128, 0.12);
+  --breath-edge: rgba(0, 0, 128, 0.04);
+  --flash: #ffffff;
+  --logo-filter: none;
+  --menu-glow: rgba(0, 0, 128, 0.25);
+  /* content wells stay dark-light: inputs readable on grey chrome */
+}
+
+:root[data-theme='bluewin'] input[type='text'],
+:root[data-theme='bluewin'] select,
+:root[data-theme='bluewin'] .sigil-string,
+:root[data-theme='bluewin'] .grimoire-textarea,
+:root[data-theme='bluewin'] .alchemy-log,
+:root[data-theme='bluewin'] .ritual-seq-progress,
+:root[data-theme='bluewin'] input[type='text']::placeholder {
+  background: #ffffff;
+  color: #000000;
+}
+
+:root[data-theme='bluewin'] .sigil-canvas,
+:root[data-theme='bluewin'] .sigil-drawer-canvas,
+:root[data-theme='bluewin'] .grimoire-preview {
+  background: #ffffff;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+}
+
+:root[data-theme='bluewin'] button:hover {
+  color: #000080;
+  background: var(--hover-bg);
+}
+
+:root[data-theme='bluewin'] .oracle-value,
+:root[data-theme='bluewin'] .stage-index,
+:root[data-theme='bluewin'] .ritual-seq-timer {
+  text-shadow: none;
+}
+
+:root[data-theme='bluewin'] .oracle-flicker,
+:root[data-theme='bluewin'] .oracle-value {
+  animation: none;
+}
+
+:root[data-theme='bluewin'] .info-icon {
+  background: #c0c0c0;
+  color: #000;
+  border-color: #808080;
+}
+
+:root[data-theme='bluewin'] .info-icon:hover {
+  background: #000080;
+  color: #fff;
+}
+
+:root[data-theme='bluewin'] .sigil-scribe-modal::before,
+:root[data-theme='bluewin'] .grimoire-window::before,
+:root[data-theme='bluewin'] .theme-menu-title {
+  color: #ffffff;
+}
+
+/* ***** PHOSPHOR TERMINAL ***** — green cathode ray */
+:root[data-theme='phosphor'] {
+  --bg-color: #000000;
+  --fg-color: #00ff41;
+  --accent-color: #00ff41;
+  --accent-glow: rgba(0, 255, 65, 0.4);
+  --panel-bg: #001400;
+  --panel-bg-solid: #000d00;
+  --panel-raised: #0a1f0a;
+  --border-color: #0a3d0a;
+  --border-light: #1f7a1f;
+  --border-dark: #001a00;
+  --dim-text: #57b857;
+  --titlebar-grad: linear-gradient(90deg, #0a4f0a 0%, #001a00 60%, #000 100%);
+  --soft-text: #8dff8d;
+  --hover-bg: #0d2a0d;
+  --hover-text: #7dff7d;
+  --inset-hi: #062f06;
+  --lift-shadow: rgba(0, 90, 0, 0.4);
+  --window-glow: rgba(0, 255, 65, 0.12);
+  --wallpaper:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 255, 65, 0.025) 3px 4px),
+    radial-gradient(circle at center, #001a00 0%, #000 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 30, 0, 0.5) 2px 4px
+  );
+  --bevel-light: #55ff55;
+  --bevel-dark: #003300;
+  --swatch-outline: #c8ffc8;
+  --tip-text: #6fdc6f;
+  --breath-fill: rgba(0, 255, 65, 0.14);
+  --breath-edge: rgba(0, 255, 65, 0.04);
+  --flash: #eaffea;
+  --logo-filter: sepia(1) saturate(6) hue-rotate(60deg) brightness(0.9);
+  --menu-glow: rgba(0, 255, 65, 0.2);
+}
+
+:root[data-theme='phosphor'] .app-container,
+:root[data-theme='phosphor'] .sidebar,
+:root[data-theme='phosphor'] .oracle-bar,
+:root[data-theme='phosphor'] .sigil-scribe-modal,
+:root[data-theme='phosphor'] button {
+  font-family: var(--font-mono);
+}
+
+/* ***** AMBER FOG ***** — warm séance CRT */
+:root[data-theme='amber'] {
+  --bg-color: #0a0600;
+  --fg-color: #ffb000;
+  --accent-color: #ffb000;
+  --accent-glow: rgba(255, 176, 0, 0.4);
+  --panel-bg: #120b00;
+  --panel-bg-solid: #0c0700;
+  --panel-raised: #1a1000;
+  --border-color: #4d3000;
+  --border-light: #8f6200;
+  --border-dark: #1f1300;
+  --dim-text: #c29253;
+  --titlebar-grad: linear-gradient(90deg, #6b4400 0%, #1f1300 60%, #0a0600 100%);
+  --soft-text: #ffd88a;
+  --hover-bg: #241600;
+  --hover-text: #ffcc55;
+  --inset-hi: #332000;
+  --lift-shadow: rgba(120, 75, 0, 0.45);
+  --window-glow: rgba(255, 176, 0, 0.12);
+  --wallpaper:
+    repeating-linear-gradient(45deg, transparent 0 14px, rgba(160, 100, 0, 0.09) 14px 15px),
+    repeating-linear-gradient(-45deg, transparent 0 14px, rgba(160, 100, 0, 0.09) 14px 15px),
+    radial-gradient(circle at center, #1a0f00 0%, #0a0600 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(30, 15, 0, 0.35) 2px 4px
+  );
+  --bevel-light: #ffd27a;
+  --bevel-dark: #4d3000;
+  --swatch-outline: #ffe9c2;
+  --tip-text: #d8b878;
+  --breath-fill: rgba(255, 176, 0, 0.14);
+  --breath-edge: rgba(255, 176, 0, 0.04);
+  --flash: #fff6e0;
+  --logo-filter: sepia(1) saturate(4) hue-rotate(-15deg) brightness(1.05);
+  --menu-glow: rgba(255, 176, 0, 0.2);
+}
+
+/* ***** BOING BALL (Amiga Workbench 1.x) ***** */
+:root[data-theme='amiga'] {
+  color-scheme: light;
+  --bg-color: #6d80c6;
+  --fg-color: #000000;
+  --accent-color: #0055aa;
+  --accent-glow: rgba(0, 85, 170, 0.35);
+  --panel-bg: #a0a0a0;
+  --panel-bg-solid: #a0a0a0;
+  --panel-raised: #b8b8b8;
+  --border-color: #6f6f6f;
+  --border-light: #ffffff;
+  --border-dark: #2e2e2e;
+  --dim-text: #333f66;
+  --titlebar-grad: linear-gradient(90deg, #0055aa 0%, #2f6fb8 55%, #a0a0a0 100%);
+  --soft-text: #ffffff;
+  --hover-bg: #c8d4ec;
+  --hover-text: #003577;
+  --inset-hi: #d6d6d6;
+  --lift-shadow: rgba(0, 0, 30, 0.45);
+  --window-glow: transparent;
+  --wallpaper: #6d80c6;
+  --scanlines: none;
+  --bevel-light: #ff8c00;
+  --bevel-dark: #003577;
+  --swatch-outline: #000000;
+  --tip-text: #2a2a2a;
+  --breath-fill: rgba(0, 85, 170, 0.14);
+  --breath-edge: rgba(0, 85, 170, 0.05);
+  --flash: #ffffff;
+  --logo-filter: none;
+  --menu-glow: rgba(0, 85, 170, 0.3);
+}
+
+:root[data-theme='amiga'] input[type='text'],
+:root[data-theme='amiga'] select,
+:root[data-theme='amiga'] .sigil-string,
+:root[data-theme='amiga'] .grimoire-textarea,
+:root[data-theme='amiga'] .alchemy-log,
+:root[data-theme='amiga'] input[type='text']::placeholder {
+  background: #ffffff;
+  color: #000000;
+}
+
+:root[data-theme='amiga'] .sigil-canvas,
+:root[data-theme='amiga'] .sigil-drawer-canvas,
+:root[data-theme='amiga'] .grimoire-preview {
+  background: #ffffff;
+}
+
+:root[data-theme='amiga'] .oracle-value,
+:root[data-theme='amiga'] .stage-index,
+:root[data-theme='amiga'] .ritual-seq-timer {
+  text-shadow: none;
+}
+
+:root[data-theme='amiga'] .oracle-value {
+  animation: none;
+}
+
+:root[data-theme='amiga'] button:hover {
+  color: #003577;
+  background: var(--hover-bg);
+}
+
+/* ***** DEEP ABYSS ***** — near-invert chrome, abyssal blue */
+:root[data-theme='midnight'] {
+  --bg-color: #02040a;
+  --fg-color: #9db8ff;
+  --accent-color: #4d7cff;
+  --accent-glow: rgba(77, 124, 255, 0.45);
+  --panel-bg: #060a18;
+  --panel-bg-solid: #03060f;
+  --panel-raised: #0a1024;
+  --border-color: #141d3f;
+  --border-light: #2a3d7a;
+  --border-dark: #060a18;
+  --dim-text: #7186b8;
+  --titlebar-grad: linear-gradient(90deg, #101b44 0%, #060b1c 60%, #02040a 100%);
+  --soft-text: #b9caff;
+  --hover-bg: #0d1530;
+  --hover-text: #8fa8ff;
+  --inset-hi: #0c1330;
+  --lift-shadow: rgba(0, 0, 60, 0.6);
+  --window-glow: rgba(77, 124, 255, 0.15);
+  --wallpaper:
+    repeating-linear-gradient(45deg, transparent 0 14px, rgba(30, 45, 110, 0.12) 14px 15px),
+    repeating-linear-gradient(-45deg, transparent 0 14px, rgba(30, 45, 110, 0.12) 14px 15px),
+    radial-gradient(circle at center, #060b1c 0%, #02040a 100%);
+  --bevel-light: #6d8dff;
+  --bevel-dark: #0a1230;
+  --swatch-outline: #dfe7ff;
+  --tip-text: #90a4d8;
+  --breath-fill: rgba(77, 124, 255, 0.14);
+  --breath-edge: rgba(77, 124, 255, 0.04);
+  --flash: #e6ecff;
+  --logo-filter: sepia(1) saturate(5) hue-rotate(190deg) brightness(0.95);
+  --menu-glow: rgba(77, 124, 255, 0.25);
+}
+
+/* ***** DEADLANGUAGES (Occult Manuscript) ***** */
+:root[data-theme='sepia'] {
+  --bg-color: #1a1204;
+  --fg-color: #e8d9b0;
+  --accent-color: #c9a227;
+  --accent-glow: rgba(201, 162, 39, 0.35);
+  --panel-bg: #211708;
+  --panel-bg-solid: #191105;
+  --panel-raised: #2a1e0a;
+  --border-color: #4d3a12;
+  --border-light: #8a6d24;
+  --border-dark: #241a08;
+  --dim-text: #a68b5c;
+  --titlebar-grad: linear-gradient(90deg, #4d3a12 0%, #241a08 60%, #191105 100%);
+  --soft-text: #e2cf9c;
+  --hover-bg: #2e2109;
+  --hover-text: #e5c65a;
+  --inset-hi: #33260e;
+  --lift-shadow: rgba(60, 42, 8, 0.6);
+  --window-glow: rgba(201, 162, 39, 0.12);
+  --wallpaper:
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(120, 90, 30, 0.05) 22px 23px),
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(120, 90, 30, 0.05) 22px 23px),
+    radial-gradient(circle at center, #241a08 0%, #140d02 100%);
+  --scanlines: none;
+  --bevel-light: #e0be62;
+  --bevel-dark: #4d3a12;
+  --swatch-outline: #f4e9c8;
+  --tip-text: #bfa06a;
+  --breath-fill: rgba(201, 162, 39, 0.13);
+  --breath-edge: rgba(201, 162, 39, 0.04);
+  --flash: #fff8e0;
+  --logo-filter: sepia(1) saturate(2.4) brightness(1.1);
+  --menu-glow: rgba(201, 162, 39, 0.2);
+}
+
+:root[data-theme='sepia'] .grimoire-record-purpose {
+  color: #d8c89a;
+}
+
+/* ***** TOXIC MIDNIGHT ***** */
+:root[data-theme='toxic'] {
+  --bg-color: #030a03;
+  --fg-color: #aaffaa;
+  --accent-color: #39ff14;
+  --accent-glow: rgba(57, 255, 20, 0.4);
+  --panel-bg: #051205;
+  --panel-bg-solid: #020a02;
+  --panel-raised: #0a1c0a;
+  --border-color: #114011;
+  --border-light: #2f8f2f;
+  --border-dark: #062006;
+  --dim-text: #7fbf7f;
+  --titlebar-grad: linear-gradient(90deg, #1c661c 0%, #062006 60%, #020a02 100%);
+  --soft-text: #d0ffd0;
+  --hover-bg: #0e2c0e;
+  --hover-text: #8dff6e;
+  --inset-hi: #0c2f0c;
+  --lift-shadow: rgba(20, 130, 20, 0.4);
+  --window-glow: rgba(57, 255, 20, 0.14);
+  --wallpaper:
+    repeating-linear-gradient(45deg, transparent 0 18px, rgba(35, 160, 25, 0.08) 18px 20px),
+    radial-gradient(circle at center, #062206 0%, #030a03 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 3px,
+    rgba(10, 60, 10, 0.25) 3px 6px
+  );
+  --bevel-light: #86ff6e;
+  --bevel-dark: #0c3a0c;
+  --swatch-outline: #eaffea;
+  --tip-text: #8ec98e;
+  --breath-fill: rgba(57, 255, 20, 0.12);
+  --breath-edge: rgba(57, 255, 20, 0.03);
+  --flash: #f2fff2;
+  --logo-filter: sepia(1) saturate(8) hue-rotate(65deg) brightness(0.9);
+  --menu-glow: rgba(57, 255, 20, 0.22);
+}
+
+/* ***** VAPOR GRID ***** */
+:root[data-theme='vaporwave'] {
+  --bg-color: #12001f;
+  --fg-color: #ffd9f2;
+  --accent-color: #ff71ce;
+  --accent-glow: rgba(255, 113, 206, 0.45);
+  --panel-bg: #1b0331;
+  --panel-bg-solid: #150127;
+  --panel-raised: #24073f;
+  --border-color: #58156b;
+  --border-light: #b0339c;
+  --border-dark: #2a0743;
+  --dim-text: #c48fc2;
+  --titlebar-grad: linear-gradient(90deg, #ff71ce 0%, #711c8f 45%, #150127 100%);
+  --soft-text: #ffd9f2;
+  --hover-bg: #2c0a4d;
+  --hover-text: #ff9adf;
+  --inset-hi: #33115a;
+  --lift-shadow: rgba(90, 10, 110, 0.55);
+  --window-glow: rgba(255, 113, 206, 0.2);
+  --wallpaper:
+    linear-gradient(180deg, #12001f 0%, #2a0743 60%, #4a0f63 100%),
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(1, 205, 254, 0.07) 22px 24px),
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(1, 205, 254, 0.07) 22px 24px);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(20, 0, 40, 0.3) 2px 4px
+  );
+  --bevel-light: #01cdfe;
+  --bevel-dark: #58156b;
+  --swatch-outline: #ffe3f6;
+  --tip-text: #d9a8dc;
+  --breath-fill: rgba(255, 113, 206, 0.15);
+  --breath-edge: rgba(255, 113, 206, 0.05);
+  --flash: #ffffff;
+  --logo-filter: sepia(1) saturate(6) hue-rotate(255deg) brightness(1.1);
+  --menu-glow: rgba(255, 113, 206, 0.3);
+}
+
+:root[data-theme='vaporwave'] .oracle-value {
+  animation: none;
+}
+
+:root[data-theme='vaporwave'] .oracle-value,
+:root[data-theme='vaporwave'] .stage-index,
+:root[data-theme='vaporwave'] .ritual-seq-timer {
+  color: #01cdfe;
+}
+
+:root[data-theme='vaporwave'] .oracle-source {
+  color: #7ce8ff;
+  border-color: #0a5a70;
+}
+
+/* ***** DMG GHOST (Game Boy) ***** */
+:root[data-theme='gameboy'] {
+  --bg-color: #0f380f;
+  --fg-color: #9bbc0f;
+  --accent-color: #8bac0f;
+  --accent-glow: rgba(139, 172, 15, 0.4);
+  --panel-bg: #306230;
+  --panel-bg-solid: #0f380f;
+  --panel-raised: #306230;
+  --border-color: #1e4d1e;
+  --border-light: #8bac0f;
+  --border-dark: #082308;
+  --dim-text: #7ea24a;
+  --titlebar-grad: linear-gradient(90deg, #306230 0%, #1e4d1e 60%, #0f380f 100%);
+  --soft-text: #c4d426;
+  --hover-bg: #3c6e3c;
+  --hover-text: #c8dc3a;
+  --inset-hi: #3c6e3c;
+  --lift-shadow: rgba(10, 40, 10, 0.6);
+  --window-glow: rgba(139, 172, 15, 0.15);
+  --wallpaper: #306230;
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(8, 35, 8, 0.3) 2px 4px
+  );
+  --bevel-light: #9bbc0f;
+  --bevel-dark: #082308;
+  --swatch-outline: #e0e8a0;
+  --tip-text: #a8bf70;
+  --breath-fill: rgba(139, 172, 15, 0.16);
+  --breath-edge: rgba(139, 172, 15, 0.05);
+  --flash: #f4ffd0;
+  --logo-filter: sepia(1) saturate(3) hue-rotate(25deg) brightness(1.1);
+  --menu-glow: rgba(139, 172, 15, 0.25);
+}
+
+:root[data-theme='gameboy'] .sigil-canvas,
+:root[data-theme='gameboy'] .sigil-drawer-canvas,
+:root[data-theme='gameboy'] .grimoire-preview,
+:root[data-theme='gameboy'] input[type='text'],
+:root[data-theme='gameboy'] select,
+:root[data-theme='gameboy'] .sigil-string,
+:root[data-theme='gameboy'] .grimoire-textarea,
+:root[data-theme='gameboy'] .alchemy-log {
+  background: #8bac0f;
+  color: #0f380f;
+}
+
+:root[data-theme='gameboy'] input[type='text']::placeholder {
+  color: #5a7a0a;
+}
+
+:root[data-theme='gameboy'] .ritual-seq-progress {
+  background: #0f380f;
+}
+
+:root[data-theme='gameboy'] .oracle-value {
+  animation: none;
+  text-shadow: none;
+}
+
+/* ***** BLOOD MOON ***** — ash chrome, hunter moon */
+:root[data-theme='bloodmoon'] {
+  --bg-color: #0a0a0a;
+  --fg-color: #e6c9cb;
+  --accent-color: #c41e3a;
+  --accent-glow: rgba(196, 30, 58, 0.45);
+  --panel-bg: #131313;
+  --panel-bg-solid: #0c0c0c;
+  --panel-raised: #1a1a1a;
+  --border-color: #3d1418;
+  --border-light: #7a2a33;
+  --border-dark: #161011;
+  --dim-text: #a8888c;
+  --titlebar-grad: linear-gradient(90deg, #5c1620 0%, #1c0c0e 60%, #0a0a0a 100%);
+  --soft-text: #dcbabc;
+  --hover-bg: #241214;
+  --hover-text: #e05a6e;
+  --inset-hi: #261316;
+  --lift-shadow: rgba(90, 15, 25, 0.5);
+  --window-glow: rgba(196, 30, 58, 0.16);
+  --wallpaper:
+    radial-gradient(ellipse at 70% 18%, rgba(196, 30, 58, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at center, #100a0b 0%, #060505 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 0, 0, 0.18) 2px 4px
+  );
+  --bevel-light: #e0506a;
+  --bevel-dark: #3d1016;
+  --swatch-outline: #f4dee0;
+  --tip-text: #b18f93;
+  --breath-fill: rgba(196, 30, 58, 0.13);
+  --breath-edge: rgba(196, 30, 58, 0.04);
+  --flash: #ffffff;
+  --logo-filter: sepia(1) saturate(2.2) hue-rotate(-30deg) brightness(0.95);
+  --menu-glow: rgba(196, 30, 58, 0.25);
+}
+
+:root[data-theme='bloodmoon'] .grimoire-record-purpose {
+  color: #d8b4b8;
+}
+
+/* ***** HOT TYPE (Press-proof CMYK) ***** */
+:root[data-theme='cmyk'] {
+  --bg-color: #0a0a0a;
+  --fg-color: #f0f0f0;
+  --accent-color: #00e5ff;
+  --accent-glow: rgba(0, 229, 255, 0.4);
+  --panel-bg: #141414;
+  --panel-bg-solid: #0e0e0e;
+  --panel-raised: #1c1c1c;
+  --border-color: #303030;
+  --border-light: #5c5c5c;
+  --border-dark: #1a1a1a;
+  --dim-text: #9a9a9a;
+  --titlebar-grad: linear-gradient(90deg, #00e5ff 0%, #0b4f5c 30%, #0e0e0e 100%);
+  --soft-text: #d8d8d8;
+  --hover-bg: #222222;
+  --hover-text: #5ef2ff;
+  --inset-hi: #262626;
+  --lift-shadow: rgba(0, 0, 0, 0.7);
+  --window-glow: rgba(0, 229, 255, 0.12);
+  --wallpaper:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.016) 3px 4px),
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(255, 255, 255, 0.016) 3px 4px),
+    radial-gradient(circle at center, #131313 0%, #060606 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 0, 0, 0.2) 2px 4px
+  );
+  --bevel-light: #7af0ff;
+  --bevel-dark: #083540;
+  --swatch-outline: #ffffff;
+  --tip-text: #a8a8a8;
+  --breath-fill: rgba(0, 229, 255, 0.12);
+  --breath-edge: rgba(0, 229, 255, 0.03);
+  --flash: #f4feff;
+  --logo-filter: grayscale(1) brightness(1.25);
+  --menu-glow: rgba(0, 229, 255, 0.2);
+}
+
+:root[data-theme='cmyk'] button.active,
+:root[data-theme='cmyk'] .copy-button.copied,
+:root[data-theme='cmyk'] .grimoire-tab.active {
+  color: #002028;
+}
+
+:root[data-theme='cmyk'] .grimoire-notice,
+:root[data-theme='cmyk'] .outcome-manifested {
+  filter: hue-rotate(160deg);
+}
+
+/* ***** per-theme menu hooks ***** */
+
+:root[data-theme='phosphor'] {
+  --menu-hover-bg: #0d2a0d;
+  --menu-hover-text: #8dff8d;
+  --menu-hover-border: #1f7a1f;
+}
+
+:root[data-theme='amber'] {
+  --menu-hover-bg: #241600;
+  --menu-hover-text: #ffd27a;
+  --menu-hover-border: #6b4400;
+}
+
+:root[data-theme='midnight'] {
+  --menu-hover-bg: #0d1530;
+  --menu-hover-text: #b9caff;
+  --menu-hover-border: #2a3d7a;
+}
+
+:root[data-theme='vaporwave'] {
+  --menu-hover-bg: #2c0a4d;
+  --menu-hover-text: #ffd9f2;
+  --menu-hover-border: #b0339c;
+}
+
+:root[data-theme='toxic'] {
+  --menu-hover-bg: #0e2c0e;
+  --menu-hover-text: #d0ffd0;
+  --menu-hover-border: #2f8f2f;
+}
+
+:root[data-theme='gameboy'] {
+  --menu-hover-bg: #3c6e3c;
+  --menu-hover-text: #c4d426;
+  --menu-hover-border: #8bac0f;
+}
+
+:root[data-theme='bloodmoon'] {
+  --menu-hover-bg: #241214;
+  --menu-hover-text: #e6c9cb;
+  --menu-hover-border: #7a2a33;
+}
+
+:root[data-theme='cmyk'] {
+  --menu-hover-bg: #222222;
+  --menu-hover-text: #7af0ff;
+  --menu-hover-border: #5c5c5c;
+}
+
+:root[data-theme='bluewin'] {
+  --menu-hover-bg: #d4d0c8;
+  --menu-hover-text: #000080;
+  --menu-hover-border: #808080;
+}
+
+:root[data-theme='amiga'] {
+  --menu-hover-bg: #c8d4ec;
+  --menu-hover-text: #003577;
+  --menu-hover-border: #6f6f6f;
+}
+
+:root[data-theme='sepia'] {
+  --menu-hover-bg: #2e2109;
+  --menu-hover-text: #e8d9b0;
+  --menu-hover-border: #8a6d24;
+}
+
+/* Light-chrome themes: dark caret for text fields */
+:root[data-theme='bluewin'] input,
+:root[data-theme='bluewin'] textarea,
+:root[data-theme='bluewin'] select {
+  color-scheme: light;
+}
+
+:root[data-theme='amiga'] input,
+:root[data-theme='amiga'] textarea,
+:root[data-theme='amiga'] select {
+  color-scheme: light;
+}
+
+/* Reduced motion: stop the menu title glow pulse and CRT shimmer */
+@media (prefers-reduced-motion: reduce) {
+  .theme-menu-title,
+  .theme-brush {
+    animation: none !important;
+  }
+}

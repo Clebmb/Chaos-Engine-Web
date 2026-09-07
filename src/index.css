@@ -1,11 +1,50 @@
+/* ============================================================
+   CHAOS ENGINE 95 — React95-inspired cursed dark theme
+   Mostly black, dark-red chrome, red text. No layout changes.
+   ============================================================ */
+
 :root {
+  /* React95 dark palette */
   --bg-color: #000000;
-  --fg-color: #ffffff;
-  --accent-color: #ff0000;
-  --accent-glow: rgba(255, 0, 0, 0.4);
-  --panel-bg: rgba(20, 20, 20, 0.8);
-  --border-color: #333333;
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --fg-color: #ff3131;
+  --accent-color: #ff2a2a;
+  --accent-glow: rgba(255, 42, 42, 0.45);
+  --panel-bg: #0a0a0a;
+  --panel-bg-solid: #050505;
+  --panel-raised: #111111;
+  --border-color: #4a0000;
+  --border-light: #8b0000;
+  --border-dark: #1a0000;
+  --dim-text: #cf6a6a;
+  --font-family: 'MS Sans Serif', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+  --font-mono: 'Courier New', 'Lucida Console', monospace;
+
+  /* Theme skin hooks — overridden per :root[data-theme="..."] in themes.css.
+     Everything below is the Crimson 95 default skin. */
+  --titlebar-grad: linear-gradient(90deg, #4a0000 0%, #150000 60%, #000 100%);
+  --soft-text: #ffb3b3;      /* window title text, close ✕, secondary readouts */
+  --hover-bg: #1c0000;       /* button hover fill */
+  --hover-text: #ff2222;     /* button hover text */
+  --inset-hi: #300000;       /* inset 1px highlight inside bevels */
+  --lift-shadow: rgba(139, 0, 0, 0.55); /* drop shadow of floating panels */
+  --window-glow: rgba(213, 0, 0, 0.2);  /* outer glow of modal windows */
+  --wallpaper:
+    repeating-linear-gradient(45deg, transparent 0 14px, rgba(139, 0, 0, 0.12) 14px 15px),
+    repeating-linear-gradient(-45deg, transparent 0 14px, rgba(139, 0, 0, 0.12) 14px 15px),
+    radial-gradient(circle at center, #140000 0%, #000 100%);
+  --scanlines: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 0, 0, 0.22) 2px 4px
+  );
+  --bevel-light: #ff5555;    /* bright corner of active-button bevels */
+  --bevel-dark: #350000;     /* dark corner of active-button bevels */
+  --swatch-outline: #ffffff;
+  --tip-text: #d98484;       /* tooltip / record body / instructions */
+  --breath-fill: rgba(213, 0, 0, 0.18);
+  --breath-edge: rgba(213, 0, 0, 0.05);
+  --flash: #ffffff;          /* banish flash frame */
+  --logo-filter: none;       /* header-link logo tint */
 }
 
 * {
@@ -18,6 +57,7 @@ body {
   background-color: var(--bg-color);
   color: var(--fg-color);
   font-family: var(--font-family);
+  font-size: 13px;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -28,24 +68,29 @@ body {
   width: 100%;
 }
 
+/* Red lattice wallpaper behind everything */
 .app-container {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  background: var(--wallpaper);
+  font-size: 13px;
+  color: var(--fg-color);
+  user-select: none;
 }
 
+/* Sidebar: raised 95 panel */
 .sidebar {
   width: 320px;
-  background: rgba(10, 10, 10, 0.85);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--panel-bg-solid);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 3px 3px 0 var(--lift-shadow);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 1rem 0.75rem;
   overflow-y: auto;
-  backdrop-filter: blur(20px) saturate(180%);
   z-index: 10;
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
   position: relative;
 }
 
@@ -55,6 +100,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0.5rem;
+  gap: 0.5rem;
 }
 
 .fractal-canvas-container {
@@ -65,6 +112,20 @@ body {
   justify-content: center;
   position: relative;
   cursor: crosshair;
+  overflow: hidden;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 2px 2px 0 #000, 0 0 0 1px #1a0000;
+}
+
+/* CRT scanlines over the fractal viewport */
+.fractal-canvas-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--scanlines);
+  z-index: 4;
 }
 
 canvas {
@@ -72,19 +133,28 @@ canvas {
   max-height: 100%;
 }
 
+/* Oracle bar: 95 window title strip. container-type lets the data row size
+   its type/gaps in cqi units — relative to the bar's real width, which the
+   viewport units can't know (the bar is narrower than the window whenever
+   anything docks beside it). */
 .oracle-bar {
-  background: #000;
-  border-bottom: 1px solid var(--border-color);
+  background: var(--panel-bg-solid);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 #300000;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 0.75rem;
   font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.1rem;
+  letter-spacing: 0.08rem;
   position: relative;
-  height: 40px;
+  min-height: 44px;
   z-index: 100;
+  color: var(--fg-color);
+  text-shadow: 0 0 6px var(--accent-glow);
+  container-type: inline-size;
 }
 
 .oracle-links {
@@ -93,23 +163,120 @@ canvas {
   gap: 1.5rem;
 }
 
+/* Win95 title-bar-style collapse toggle (mobile: ▲ = expand fractal, ▼ = show controls) */
+.oracle-toggle {
+  background: var(--panel-raised);
+  color: var(--soft-text);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0 0.45rem;
+  font-size: 0.6rem;
+  line-height: 1;
+  font-weight: bold;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+  min-width: 22px;
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.oracle-toggle:hover {
+  background: var(--hover-bg);
+  color: var(--hover-text);
+}
+
+.oracle-toggle:active {
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  transform: translate(1px, 1px);
+}
+
+/* Collapsed: hide the control panel but keep it mounted so audio keeps playing
+   and all control state persists. The fractal view takes the full app. */
+.sidebar-hidden {
+  display: none;
+}
+
+/* Collapsed on desktop: the flex row just leaves the main view fullscreen.
+   Collapsed on mobile: the sidebar vanishes from the column flow and the
+   50vh/50vh split is dropped entirely. */
+.sidebar-collapsed .main-view {
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
+
+/* Ritual immersion (sequencer phase with hideSidebar): the same fullscreen
+   rules apply on both layouts, plus the main view drops its own padding so
+   the stage fills edge-to-edge. The oracle bar is removed from the tree by
+   the component itself. */
+.seq-immersive .main-view {
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+}
+
+.seq-immersive .fractal-canvas-container {
+  border: none;
+  box-shadow: none;
+}
+
+
 .oracle-data {
+  /* A real flex zone between the links and the source logo — no absolute
+     overlay, so it gets its true share of the bar and can never cover the
+     links. Fluid type/gaps (cqi) compress the row as the bar narrows; only
+     as a last resort do whole feature groups wrap to a second line. */
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 0.1rem;
+  column-gap: clamp(0.4rem, 2.4cqi, 1.25rem);
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(0.58rem, 1.5cqi, 0.75rem);
+}
+
+/* One unbreakable unit: label + value + ? (each feature stays whole). */
+.oracle-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+  flex: none;
+}
+
+.oracle-pin {
+  font-size: 0.7rem;
+  text-shadow: none;
+  animation: none;
 }
 
 .oracle-label {
-  color: #888;
+  color: var(--dim-text);
+  font-family: var(--font-family);
+  font-weight: bold;
 }
 
 .oracle-value {
   color: var(--accent-color);
   font-weight: bold;
-  text-shadow: 0 0 5px var(--accent-glow);
+  text-shadow: 0 0 8px var(--accent-glow);
+  animation: oracle-flicker 3s infinite steps(1);
+}
+
+@keyframes oracle-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.75; }
+  95% { opacity: 1; }
+  97% { opacity: 0.85; }
 }
 
 .clebmb-link {
@@ -150,6 +317,18 @@ canvas {
     top: 50%;
     transform: translateY(-50%);
   }
+
+  /* Reserve the strip the absolutely-positioned source logo occupies
+     (104px logo + 1rem right offset + air) so the data zone can never
+     slide beneath it. */
+  .oracle-bar {
+    padding-right: 8.4rem;
+  }
+
+  /* A touch tighter tracking so the data row earns back some width. */
+  .oracle-data {
+    letter-spacing: 0.04rem;
+  }
 }
 
 .coffee-link:active,
@@ -163,6 +342,7 @@ canvas {
   width: auto;
   opacity: 0.8;
   transition: opacity 0.3s ease;
+  filter: var(--logo-filter);
 }
 
 .coffee-logo:hover,
@@ -173,9 +353,10 @@ canvas {
 .app-logo {
   max-width: 100%;
   height: auto;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
   display: block;
+  image-rendering: auto;
 }
 
 .sigilarium-link {
@@ -192,7 +373,7 @@ canvas {
   max-width: 200px;
   height: auto;
   transition: all 0.5s ease;
-  filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.2));
+  filter: drop-shadow(0 0 5px rgba(213, 0, 0, 0.25));
 }
 
 .sigilarium-link:hover .sigilarium-logo {
@@ -206,15 +387,23 @@ h3 {
   text-transform: uppercase;
   letter-spacing: 0.2rem;
   margin-bottom: 1rem;
+  color: var(--fg-color);
+  text-shadow: 0 0 8px var(--accent-glow);
 }
 
+/* Section titles: inset bar, like a 95 group box header */
 .section-title {
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 1.5rem;
+  font-size: 0.7rem;
+  color: var(--accent-color);
+  font-weight: bold;
+  margin-top: 1.25rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid #222;
-  padding-bottom: 0.2rem;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: var(--panel-raised);
+  padding: 0.3rem 0.5rem;
+  letter-spacing: 0.15rem;
+  text-shadow: 0 0 6px var(--accent-glow);
 }
 
 .control-group {
@@ -224,65 +413,86 @@ h3 {
   margin-bottom: 1rem;
 }
 
+/* Sunken 95 text fields / selects */
 input[type="text"],
 select {
-  background: #111;
-  border: 1px solid var(--border-color);
-  color: #fff;
-  padding: 0.6rem;
-  font-family: inherit;
-  font-size: 0.9rem;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  color: var(--fg-color);
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
   width: 100%;
   outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.8);
+}
+
+input[type="text"]::placeholder {
+  color: var(--dim-text);
 }
 
 input[type="text"]:focus {
   border-color: var(--accent-color);
-  box-shadow: 0 0 5px var(--accent-glow);
+  box-shadow: 0 0 0 1px var(--accent-color), 0 0 8px var(--accent-glow);
 }
 
+select {
+  cursor: pointer;
+}
+
+/* 95 raised buttons */
 button {
-  background: #fff;
-  color: #000;
-  border: none;
-  padding: 0.7rem;
+  background: var(--panel-raised);
+  color: var(--fg-color);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.6rem;
   font-family: inherit;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.1rem;
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: background 0.3s, color 0.3s, transform 0.1s;
+  text-shadow: 0 0 4px var(--accent-glow);
+  transition: none;
 }
 
 button:hover {
-  background: var(--accent-color);
-  color: #fff;
+  background: var(--hover-bg);
+  color: var(--hover-text);
 }
 
 button:active {
-  transform: scale(0.98);
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 2px 2px 3px #000;
+  transform: translate(1px, 1px);
 }
 
 button.secondary {
-  background: #222;
-  color: #fff;
-  border: 1px solid var(--border-color);
+  background: var(--panel-bg);
+  color: var(--fg-color);
+  border-color: var(--border-color);
+  box-shadow: none;
 }
 
 button.secondary:hover {
-  background: #333;
+  background: var(--hover-bg);
+  color: var(--hover-text);
 }
 
 button.mini {
   padding: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
 }
 
 button.active {
   background: var(--accent-color);
-  color: #fff;
-  box-shadow: 0 0 10px var(--accent-glow);
+  color: #000;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.25), 0 0 10px var(--accent-glow);
+  text-shadow: none;
 }
 
 .button-grid {
@@ -293,7 +503,7 @@ button.active {
 
 .file-upload-group {
   margin-top: 0.5rem;
-  border: 1px dashed var(--border-color);
+  border: 1px dashed var(--border-light);
   padding: 0.5rem;
   display: flex;
   justify-content: center;
@@ -310,6 +520,7 @@ button.active {
 
 .checkbox-group input {
   cursor: pointer;
+  accent-color: var(--accent-color);
 }
 
 .audio-controls {
@@ -324,9 +535,20 @@ button.active {
   gap: 0.3rem;
 }
 
+.slider-group label {
+  font-size: 0.7rem;
+  color: var(--dim-text);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05rem;
+  text-transform: uppercase;
+}
+
+/* Chunky red-on-black range sliders */
 input[type="range"] {
   width: 100%;
   accent-color: var(--accent-color);
+  height: 14px;
+  cursor: ew-resize;
 }
 
 .frequency-input-group {
@@ -334,34 +556,71 @@ input[type="range"] {
   gap: 0.5rem;
 }
 
+/* Sigil Scribe: full 95 app window */
 .sigil-scribe-modal {
   position: absolute;
-  top: 5vh;
-  left: 5vw;
-  width: 90vw;
-  height: 90vh;
-  background: rgba(0, 0, 0, 0.95);
-  border: 1px solid var(--border-color);
-  z-index: 100;
+  top: 4vh;
+  left: 4vw;
+  width: 92vw;
+  height: 92vh;
+  background: var(--panel-bg-solid);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 6px 6px 0 rgba(0, 0, 0, 0.75), 0 0 40px var(--window-glow);
+  z-index: 200; /* above the oracle bar (z-index 100) so it never gets covered on mobile */
   display: flex;
   flex-direction: column;
-  padding: 2rem;
-  color: #fff;
+  padding: 2.25rem 1.5rem 1.5rem;
+  color: var(--fg-color);
+  overflow: hidden;
+}
+
+/* Window title bar inside the modal */
+.sigil-scribe-modal::before {
+  content: 'SIGIL SCRIBE';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: var(--titlebar-grad);
+  border-bottom: 2px solid;
+  border-color: var(--border-light) transparent transparent transparent;
+  color: var(--soft-text);
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 0.15rem;
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  text-transform: uppercase;
 }
 
 .sigil-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* Flex-wrap centers a stage that lands alone on its own line (e.g. stage 4
+     of 5 in a 2-column layout); a plain grid would strand it on the left. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
   flex: 1;
   overflow-y: auto;
+  padding-right: 0.25rem;
+  align-content: flex-start;
 }
 
+/* Each sigil stage is a mini 95 window. Flex-basis mirrors the old
+   minmax(200px, 1fr) packing; max-width keeps a lone stage card-sized
+   instead of stretching across the whole modal. */
 .sigil-item {
-  background: #111;
-  border: 1px solid #222;
-  padding: 1rem;
+  flex: 1 1 200px;
+  max-width: 420px;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 3px 3px 0 var(--lift-shadow);
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -371,28 +630,32 @@ input[type="range"] {
   width: 100%;
   aspect-ratio: 4/3;
   background: #000;
-  border: 1px solid #333;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 2px 2px 0 #000;
+  image-rendering: pixelated;
 }
 
 .sigil-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .stage-index {
   color: var(--accent-color);
   font-weight: bold;
+  text-shadow: 0 0 6px var(--accent-glow);
 }
 
 .stage-label {
-  color: #888;
+  color: var(--dim-text);
 }
 
 .sigil-string-container {
@@ -403,15 +666,16 @@ input[type="range"] {
 
 .sigil-string {
   flex: 1;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--fg-color);
   background: #000;
   padding: 0.4rem;
-  border-radius: 2px;
   overflow-x: auto;
   white-space: nowrap;
-  border: 1px solid #222;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.8);
 }
 
 .sigil-string::-webkit-scrollbar {
@@ -419,36 +683,1340 @@ input[type="range"] {
 }
 
 .sigil-string::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--border-light);
 }
 
 .sigil-string::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
 }
 
-.copy-button {
-  background: #222;
-  color: #888;
-  border: 1px solid #333;
-  padding: 0 0.6rem;
-  font-size: 0.65rem;
-  letter-spacing: 0.05rem;
+/* Sigil Workshop: same 95 window, named via its own pseudo-element */
+.sigil-drawer-canvas-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.sigil-drawer-canvas {
+  width: min(420px, 100%);
+  aspect-ratio: 1/1;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 2px 2px 0 #000;
+  image-rendering: pixelated;
+}
+
+/* When the export will be transparent, hint it with a checkerboard */
+.sigil-drawer-canvas.transparent {
+  background:
+    repeating-conic-gradient(#1a1a1a 0% 25%, #000 0% 50%) 0 0 / 16px 16px;
+}
+
+.drawer-options {
+  margin-top: 0.5rem;
+}
+
+.drawer-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem 1.2rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.drawer-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Native color input, reskinned into a beveled 95 chip */
+.color-input {
+  width: 42px;
+  height: 28px;
+  padding: 0 2px;
+  background: var(--panel-raised);
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
   cursor: pointer;
-  transition: all 0.2s ease;
+}
+
+.color-input:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch {
+  border: 1px solid #000;
+}
+
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.swatch.active {
+  outline: 2px solid var(--swatch-outline);
+  outline-offset: 1px;
+  border-color: var(--swatch-outline);
+}
+
+.swatch:hover {
+  filter: brightness(1.3);
+}
+
+.sigil-scribe-modal.drawer-title::before {
+  content: 'SIGIL WORKSHOP';
+}
+
+/* BANISH: the one button that is allowed to look dangerous */
+.banish-button {
+  background: #1a0000;
+  color: #ff2222;
+  border: 2px solid;
+  border-color: #ff4444 #350000 #350000 #ff4444;
+  box-shadow: inset 0 0 12px rgba(255, 34, 34, 0.25), 0 0 10px rgba(255, 34, 34, 0.2);
+  letter-spacing: 0.2rem;
+}
+
+.banish-button:hover {
+  background: #330000;
+  color: #fff;
+}
+
+.banish-button:active {
+  border-color: #350000 #ff4444 #ff4444 #350000;
+}
+
+.banish-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Banish flash: a white frame flashes over the whole app during banishing */
+.banish-flash {
+  position: fixed;
+  inset: 0;
+  background: var(--flash, #fff);
+  z-index: 9999;
+  pointer-events: none;
+  animation: banish-flash-anim 1.2s ease-out forwards;
+}
+
+@keyframes banish-flash-anim {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+/* Banish confirmation: a small 95 warning window over a dimmed app.
+   Sits above the oracle bar (100) and modals (200), below the flash (9999). */
+.banish-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banish-confirm-box {
+  position: relative;
+  width: min(340px, 92vw);
+  background: var(--panel-bg-solid);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 6px 6px 0 rgba(0, 0, 0, 0.75), 0 0 40px var(--window-glow);
+  padding: 1.5rem 1.25rem 1.25rem;
+  text-align: center;
+}
+
+.banish-confirm-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--hover-text, #ff2222);
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px var(--accent-glow);
+  animation: warning-blink 1.2s infinite steps(1);
+}
+
+.banish-confirm-text {
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--tip-text);
+  margin-bottom: 1.25rem;
+  font-family: var(--font-mono);
+}
+
+.banish-confirm-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.banish-confirm-buttons button {
+  min-width: 96px;
+}
+
+/* YES carries the dangerous red; NO stays a plain 95 button */
+.banish-confirm-yes {
+  background: #1a0000;
+  color: #ff2222;
+  border: 2px solid;
+  border-color: #ff4444 #350000 #350000 #ff4444;
+  box-shadow: inset 0 0 12px rgba(255, 34, 34, 0.25), 0 0 10px rgba(255, 34, 34, 0.2);
+  letter-spacing: 0.2rem;
+}
+
+.banish-confirm-yes:hover {
+  background: #330000;
+  color: #fff;
+}
+
+.banish-confirm-yes:active {
+  border-color: #350000 #ff4444 #ff4444 #350000;
+}
+
+/* ---------------- Divination ---------------- */
+/* Title bar text set via .divination-window::before (same specificity as
+   .drawer-title so the later rule wins) */
+.sigil-scribe-modal.divination-window::before {
+  content: 'DIVINATION';
+}
+
+.divination-content {
+  max-width: 1000px;
+}
+
+.div-source-seal {
+  display: inline-block;
+  margin-left: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1rem;
+  color: var(--soft-text);
+  border: 1px solid var(--border-color);
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+.div-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.div-tab {
+  border-radius: 6px 6px 0 0;
+  border-bottom: none;
+}
+
+.div-tab.active {
+  background: var(--accent-color);
+  color: #000;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  text-shadow: none;
+}
+
+.div-spread-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.div-spread-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--dim-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08rem;
+}
+
+.div-cast-button {
+  width: 100%;
+  letter-spacing: 0.3rem;
+  font-size: 0.85rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.div-casting-note {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--dim-text);
+  padding: 1.5rem 0;
+  animation: oracle-flicker 1.4s infinite steps(1);
+}
+
+.div-reading {
+  animation: div-reveal 0.5s ease-out;
+}
+
+@keyframes div-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- Geomancy shield chart --- */
+.div-shield-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
+}
+
+.div-shield-row {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.div-shield-cell {
+  flex: 1 1 90px;
+  max-width: 150px;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.div-shield-cell.head {
+  flex: 0 0 92px;
+  max-width: 92px;
+  justify-content: center;
+  background: var(--panel-raised);
+}
+
+.div-cell-tag {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.08rem;
+  text-transform: uppercase;
+  color: var(--dim-text);
+}
+
+.div-cell-name {
+  font-size: 0.58rem;
+  color: var(--fg-color);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.div-geo-glyph {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.div-geo-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.div-geo-row {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0.22rem;
+  color: var(--dim-text);
+  padding-right: 0.22rem; /* balance the trailing letter-spacing */
+}
+
+.div-geo-row.active {
+  color: var(--accent-color);
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.div-geo-name {
+  font-size: 0.55rem;
+  color: var(--dim-text);
+}
+
+.div-geo-interpretation {
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: var(--panel-bg);
+  padding: 0.9rem 1rem;
+  box-shadow: inset 2px 2px 0 #000;
+}
+
+.div-geo-interpretation h3 {
+  margin-bottom: 0.4rem;
+}
+
+.div-geo-interpretation p {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--tip-text);
+  margin-bottom: 0.5rem;
+}
+
+.div-omen-line {
+  font-family: var(--font-mono);
+  font-size: 0.62rem !important;
+  color: var(--accent-color) !important;
+  letter-spacing: 0.05rem;
+}
+
+.div-sentence-line strong {
+  color: var(--fg-color);
+}
+
+/* --- Runes --- */
+.div-rune-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.div-rune-slot {
+  flex: 1 1 160px;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.8rem;
+}
+
+.div-position-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1rem;
+  text-transform: uppercase;
+  color: var(--dim-text);
+}
+
+.div-rune-stone {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-raised);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 0 0 10px var(--accent-glow);
+}
+
+.div-rune-stone.reversed {
+  transform: rotate(180deg);
+}
+
+.div-rune-glyph {
+  font-size: 2rem;
+  color: var(--accent-color);
+  text-shadow: 0 0 8px var(--accent-glow);
+  line-height: 1;
+}
+
+.div-rune-name {
+  font-weight: bold;
+  font-size: 0.75rem;
+  color: var(--fg-color);
+}
+
+.div-rune-meaning {
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--tip-text);
+  text-align: center;
+}
+
+/* --- Tarot --- */
+.div-tarot-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.div-tarot-card {
+  flex: 1 1 170px;
+  max-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi), 3px 3px 0 var(--lift-shadow);
+  padding: 0.8rem;
+}
+
+.div-tarot-face {
+  aspect-ratio: 3/4.4;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background:
+    radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%),
+    var(--panel-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem;
+}
+
+.div-tarot-card.reversed .div-tarot-face {
+  transform: rotate(180deg);
+}
+
+.div-tarot-arcana {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.14rem;
+  color: var(--dim-text);
+}
+
+.div-tarot-name {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--fg-color);
+  text-align: center;
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.div-tarot-reversed {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1rem;
+  color: var(--accent-color);
+}
+
+.div-tarot-keywords {
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: var(--tip-text);
+}
+
+/* --- I Ching --- */
+.div-iching-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 0.9rem;
+}
+
+.div-iching-block {
+  flex: 1 1 220px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.9rem;
+}
+
+.div-iching-figure {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.div-hex-lines {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 5px;
+}
+
+.div-hex-line {
+  width: 84px;
+  height: 0;
+  border-top: 6px solid var(--dim-text);
+  position: relative;
+}
+
+.div-hex-line.yang {
+  border-top-color: var(--accent-color);
+  filter: drop-shadow(0 0 3px var(--accent-glow));
+}
+
+/* Yin: two segments with a gap */
+.div-hex-line:not(.yang) {
+  border-top: none;
+  height: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--dim-text) 0 38%,
+    transparent 38% 62%,
+    var(--dim-text) 62% 100%
+  );
+}
+
+.div-hex-line.changing::after {
+  content: '◉';
+  position: absolute;
+  right: -18px;
+  top: -8px;
+  font-size: 0.6rem;
+  color: var(--accent-color);
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.div-hex-glyph {
+  font-size: 2.4rem;
+  color: var(--fg-color);
+  text-shadow: 0 0 10px var(--accent-glow);
+  line-height: 1;
+}
+
+.div-hex-title {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: var(--fg-color);
+}
+
+.div-hex-chinese {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--dim-text);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.div-iching-tosses {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--tip-text);
+  text-align: center;
+}
+
+.div-toss {
+  display: inline-block;
+  border: 1px solid var(--border-color);
+  padding: 0 5px;
+  margin: 0 2px;
+  color: var(--fg-color);
+}
+
+.div-changing-note {
+  color: var(--accent-color);
+}
+
+@media (max-width: 768px) {
+  .div-shield-cell {
+    flex: 1 1 74px;
+    max-width: 110px;
+  }
+
+  .div-shield-cell.head {
+    flex: 0 0 100%;
+    max-width: none;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .div-hex-line {
+    width: 64px;
+  }
+}
+
+/* ---------------- Grimoire ---------------- */
+/* Same or higher specificity than .drawer-title (element carries both classes) */
+.sigil-scribe-modal.grimoire-window::before {
+  content: 'GRIMOIRE';
+}
+
+.grimoire-content {
+  max-width: 900px;
+}
+
+.grimoire-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+/* File-folder style tabs */
+.grimoire-tab {
+  border-radius: 6px 6px 0 0;
+  border-bottom: none;
+}
+
+.grimoire-tab.active {
+  background: var(--accent-color);
+  color: #000;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  text-shadow: none;
+}
+
+.grimoire-data-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.grimoire-import-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.grimoire-notice {
+  background: #0d1a0d;
+  color: #66ff88;
+  border: 1px solid #2a5a2a;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.grimoire-capture {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.grimoire-capture.column {
+  flex-direction: column;
+}
+
+.grimoire-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  max-height: calc(92vh - 320px);
+  padding-right: 0.25rem;
+}
+
+.grimoire-empty {
+  color: var(--dim-text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.grimoire-record {
+  display: flex;
+  gap: 0.75rem;
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.75rem;
+}
+
+.grimoire-preview {
+  width: 120px;
+  height: 90px;
+  flex-shrink: 0;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  image-rendering: pixelated;
+}
+
+.grimoire-record-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.grimoire-record-title {
+  color: var(--fg-color);
+  font-weight: bold;
+  letter-spacing: 0.05rem;
+}
+
+.grimoire-record-meta {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--dim-text);
+}
+
+.grimoire-record-purpose {
+  font-size: 0.75rem;
+  color: #ffaaaa;
+}
+
+.grimoire-record-body {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--tip-text);
+  white-space: pre-wrap;
+}
+
+.grimoire-record-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+/* ------- Servitor wizard + awakened cards ------- */
+
+.servitor-forge-button {
+  flex: 1;
+  letter-spacing: 0.08rem;
+}
+
+.servitor-sigil-thumb {
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  /* Checkerboard reveals the transparent export behind the glyph. */
+  background:
+    linear-gradient(45deg, #141414 25%, transparent 25%, transparent 75%, #141414 75%),
+    linear-gradient(45deg, #141414 25%, transparent 25%, transparent 75%, #141414 75%),
+    #0a0a0a;
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  object-fit: contain;
+}
+
+.servitor-terms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--tip-text);
+}
+
+.servitor-awaken {
+  font-weight: bold;
+  letter-spacing: 0.05rem;
+}
+
+.servitor-wizard-window .modal-content {
+  max-width: 560px;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.wizard-steps {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.wizard-step {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.wizard-step.active {
+  outline: 2px solid var(--skin-accent, #ff2a2a);
+  outline-offset: -2px;
+  color: var(--skin-accent, #ff2a2a);
+}
+
+.wizard-step.done {
+  color: var(--skin-accent, #ff2a2a);
+  opacity: 0.75;
+}
+
+.wizard-body {
+  min-height: 240px;
+}
+
+.wizard-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--dim-text);
+  margin: 0.6rem 0 0.25rem;
+  letter-spacing: 0.05rem;
+  text-transform: uppercase;
+}
+
+.wizard-letters {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--skin-accent, #ff2a2a);
+  margin-top: 0.6rem;
+  letter-spacing: 0.12rem;
+}
+
+.wizard-notice {
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: rgba(139, 0, 0, 0.18);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--fg-color);
+  margin-bottom: 0.75rem;
+}
+
+.wizard-tone-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wizard-tone-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.wizard-finish {
+  font-weight: bold;
+  letter-spacing: 0.08rem;
+}
+
+/* ------- Listening Bone (audio-reactive) ------- */
+
+.audio-reactive-section .control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reactive-source-row {
+  display: flex;
+  gap: 4px;
+}
+
+.reactive-source-btn {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08rem;
+  padding: 0.3rem 0;
+}
+
+.reactive-source-btn.active {
+  font-weight: bold;
+  color: #000; /* accent red vanishes on the raised panel; black reads */
+  box-shadow: inset 1px 1px 0 var(--border-dark), inset -1px -1px 0 var(--border-light);
+}
+
+.reactive-toggle {
+  letter-spacing: 0.1rem;
+  font-weight: bold;
+}
+
+.reactive-toggle.listening {
+  color: var(--skin-accent, #ff2a2a);
+  text-shadow: 0 0 8px var(--skin-accent, #ff2a2a);
+  animation: reactive-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes reactive-breathe {
+  0%, 100% { text-shadow: 0 0 4px var(--skin-accent, #ff2a2a); }
+  50% { text-shadow: 0 0 14px var(--skin-accent, #ff2a2a); }
+}
+
+.reactive-meter {
+  width: 100%;
+  height: 48px;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: #050505;
+}
+
+.reactive-error {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--skin-accent, #ff2a2a);
+  padding: 0.35rem 0.5rem;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+}
+
+.reactive-hint {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--dim-text);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .wizard-body {
+    min-height: 200px;
+  }
+
+  .wizard-tone-row {
+    flex-direction: column;
+  }
+}
+
+.grimoire-textarea {
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  color: var(--fg-color);
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  width: 100%;
+  outline: none;
+  resize: vertical;
+}
+
+/* Outcome badges: click-to-cycle */
+.outcome-badge {
+  min-width: 110px;
+  font-family: var(--font-mono);
+}
+
+.outcome-pending {
+  color: var(--dim-text);
+}
+
+.outcome-manifested {
+  color: #66ff88;
+  border-color: #2a5a2a #113311 #113311 #2a5a2a;
+  text-shadow: 0 0 6px rgba(102, 255, 136, 0.4);
+}
+
+.outcome-partial {
+  color: #ffdd66;
+  border-color: #5a4a1a #332a08 #332a08 #5a4a1a;
+  text-shadow: 0 0 6px rgba(255, 221, 102, 0.4);
+}
+
+.outcome-failed {
+  color: #ff6666;
+  text-shadow: 0 0 6px rgba(255, 102, 102, 0.4);
+}
+
+/* ---------------- Breath pacer overlay ---------------- */
+.breath-pacer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.breath-disc {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--accent-color);
+  background: radial-gradient(circle, var(--breath-fill) 0%, var(--breath-edge) 70%);
+  box-shadow: 0 0 30px var(--accent-glow), inset 0 0 40px var(--breath-edge);
+  transition: none;
+}
+
+.breath-text {
+  position: relative;
+  text-align: center;
+  text-shadow: 0 0 8px #000, 0 0 4px #000;
+}
+
+.breath-label {
+  color: var(--fg-color);
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 0.3rem;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px var(--accent-glow), 0 0 3px #000;
+}
+
+.breath-count {
+  color: var(--soft-text);
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  margin-top: 0.2rem;
+  text-shadow: 0 0 6px var(--accent-glow), 0 0 3px #000;
+}
+
+/* Dismiss control: the pacer container is pointer-events:none for the disc,
+   so the button re-enables hit-testing for itself. */
+.breath-abort {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  pointer-events: auto;
+  background: var(--panel-raised);
+  color: var(--fg-color);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: bold;
+  letter-spacing: 0.08rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-shadow: none;
+  z-index: 8;
+}
+
+.breath-abort:hover {
+  background: var(--hover-bg);
+  color: var(--hover-text);
+}
+
+.breath-abort:active {
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  transform: translate(1px, 1px);
+}
+
+/* Standalone Breathwork controls in Ritual Tools */
+.breath-pattern-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breath-pattern-group .button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.breath-pattern-group .button-grid button.active {
+  outline: 2px solid var(--skin-accent, var(--accent-color));
+  outline-offset: -2px;
+}
+
+.breath-note {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--dim-text);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .breath-pattern-group .button-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------- Ritual sequencer ---------------- */
+.ritual-seq-panel .ritual-seq-note {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--dim-text);
+  line-height: 1.4;
+}
+
+.ritual-seq-active {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ritual-seq-phase-label {
+  color: var(--accent-color);
+  font-weight: bold;
+  font-size: 0.8rem;
+  letter-spacing: 0.1rem;
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.ritual-seq-instructions {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--tip-text);
+  line-height: 1.5;
+}
+
+.ritual-seq-timer {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  color: var(--fg-color);
+  text-shadow: 0 0 10px var(--accent-glow);
+  text-align: center;
+}
+
+.ritual-seq-progress {
+  height: 10px;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  overflow: hidden;
+}
+
+.seq-mode-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: var(--panel-bg);
+}
+
+.seq-mode-group .checkbox-group {
+  font-size: 0.72rem;
+}
+
+/* ------- Ritual HUD (immersive phase overlay) -------
+   When a sequencer phase hides the sidebar, the controls live here: a slim
+   banner pinned to the top of the stage with phase, timer, skip and abort. */
+.ritual-hud {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.6rem;
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  max-width: calc(100% - 1rem);
+}
+
+.ritual-hud-phase {
+  color: var(--accent-color);
+  font-weight: bold;
+  font-size: 0.62rem;
+  letter-spacing: 0.08rem;
+  text-shadow: 0 0 6px var(--accent-glow);
   white-space: nowrap;
 }
 
+.ritual-hud-timer {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-color);
+  white-space: nowrap;
+}
+
+.ritual-hud button {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.6rem;
+}
+
+.ritual-hud-instructions {
+  position: absolute;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(560px, calc(100% - 1.4rem));
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--soft-text);
+  text-shadow: 0 0 8px #000, 0 0 3px #000;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .ritual-hud {
+    gap: 0.4rem;
+    padding: 0.25rem 0.45rem;
+    max-width: calc(100% - 0.7rem);
+  }
+
+  .ritual-hud-phase {
+    font-size: 0.55rem;
+  }
+
+  .ritual-hud button {
+    padding: 0.2rem 0.45rem;
+  }
+
+  .ritual-hud-instructions {
+    font-size: 0.6rem;
+    bottom: 0.8rem;
+  }
+}
+
+.ritual-seq-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-glow);
+  transition: width 1s linear;
+}
+
+.ritual-seq-meta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--dim-text);
+  letter-spacing: 0.05rem;
+}
+
+/* Small square COPY button — pure 95 */
+.copy-button {
+  background: var(--panel-raised);
+  color: var(--fg-color);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--inset-hi);
+  padding: 0 0.6rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.05rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: bold;
+  transition: none;
+}
+
 .copy-button:hover:not(:disabled) {
-  background: #333;
-  color: #fff;
-  border-color: #444;
+  background: var(--hover-bg);
+  color: var(--fg-color);
+}
+
+.copy-button:active:not(:disabled) {
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  transform: translate(1px, 1px);
 }
 
 .copy-button.copied {
   background: var(--accent-color);
-  color: #fff;
-  border-color: var(--accent-color);
+  color: #000;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
   box-shadow: 0 0 8px var(--accent-glow);
+  text-shadow: none;
 }
 
 .copy-button:disabled {
@@ -457,9 +2025,10 @@ input[type="range"] {
 }
 
 .scribe-info {
-  font-size: 0.9rem;
-  color: #888;
+  font-size: 0.8rem;
+  color: var(--dim-text);
   margin-bottom: 1.5rem;
+  font-family: var(--font-mono);
 }
 
 .modal-content {
@@ -471,56 +2040,81 @@ input[type="range"] {
 
 .close-button {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 2px;
+  right: 4px;
   background: transparent;
-  color: #fff;
-  font-size: 1.5rem;
+  color: var(--soft-text);
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  box-shadow: none;
+  padding: 0 0.5rem;
+  z-index: 2;
+  font-family: var(--font-family);
 }
 
 .close-button:hover {
-  color: var(--accent-color);
-  background: transparent;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #000;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #333;
-}
-
-::-webkit-scrollbar-thumb:hover {
+  color: #fff;
   background: var(--accent-color);
 }
 
-/* Digital Alchemy Styles */
+/* Chunky 95 scrollbars */
+::-webkit-scrollbar {
+  width: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+  border-left: 1px solid var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--panel-raised);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--hover-bg);
+}
+
+::-webkit-scrollbar-button:single-button {
+  background: var(--panel-raised);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  display: block;
+  height: 14px;
+}
+
+/* Digital Alchemy */
 .alchemy-confirm {
-  background: rgba(30, 10, 10, 0.95);
-  border: 1px solid var(--accent-color);
+  background: var(--panel-bg);
+  border: 2px solid;
+  border-color: #ff4444 var(--border-dark) var(--border-dark) #ff4444;
   padding: 1.5rem;
   margin-top: 1rem;
-  box-shadow: 0 0 20px var(--accent-glow);
+  box-shadow: 0 0 20px var(--accent-glow), inset 0 0 30px rgba(139, 0, 0, 0.25);
 }
 
 .confirm-title {
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  color: var(--accent-color);
+  color: #ff2222;
   margin-bottom: 1rem;
   text-shadow: 0 0 10px var(--accent-glow);
+  animation: warning-blink 1.2s infinite steps(1);
+}
+
+@keyframes warning-blink {
+  0%, 60%, 100% { opacity: 1; }
+  61% { opacity: 0.35; }
 }
 
 .confirm-text {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   line-height: 1.6;
-  color: #ccc;
+  color: var(--tip-text);
 }
 
 .confirm-text p {
@@ -528,7 +2122,7 @@ input[type="range"] {
 }
 
 .confirm-text strong {
-  color: #fff;
+  color: var(--fg-color);
 }
 
 .confirm-text em {
@@ -549,18 +2143,21 @@ input[type="range"] {
 
 .alchemy-log {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--accent-color);
   margin-top: 1rem;
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid #222;
-  font-family: 'Courier New', monospace;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.8);
+  font-family: var(--font-mono);
   max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
+  text-shadow: 0 0 4px var(--accent-glow);
 }
 
-/* Info Tooltips */
+/* Info tooltips */
 .info-box-container {
   display: inline-block;
   position: relative;
@@ -569,24 +2166,27 @@ input[type="range"] {
 }
 
 .info-icon {
-  font-size: 0.75rem;
-  color: #666;
+  font-size: 0.7rem;
+  color: var(--dim-text);
   cursor: help;
   user-select: none;
-  border: 1px solid #444;
+  border: 1px solid var(--border-light);
   border-radius: 50%;
   width: 16px;
   height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  background: var(--panel-raised);
+  font-weight: bold;
+  transition: none;
 }
 
 .info-icon:hover {
-  color: var(--accent-color);
+  color: #000;
   border-color: var(--accent-color);
-  background: rgba(255, 0, 0, 0.1);
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .info-tooltip {
@@ -596,26 +2196,29 @@ input[type="range"] {
   left: 50%;
   transform: translateX(-50%);
   width: 240px;
-  background: rgba(10, 10, 10, 0.98);
-  border: 1px solid var(--accent-color);
-  color: #ccc;
+  background: var(--panel-bg-solid);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: inset 1px 1px 0 #300000, 3px 3px 0 rgba(0, 0, 0, 0.7);
+  color: var(--tip-text);
   padding: 0.8rem;
   font-size: 0.75rem;
   text-transform: none;
   letter-spacing: normal;
   line-height: 1.4;
   z-index: 1000;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.2s steps(3);
   pointer-events: none;
+  font-family: var(--font-family);
 }
 
 .info-tooltip h4 {
   color: var(--accent-color);
   margin-bottom: 0.4rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
+  text-shadow: 0 0 6px var(--accent-glow);
 }
 
 .info-box-container:hover .info-tooltip {
@@ -623,9 +2226,11 @@ input[type="range"] {
   opacity: 1;
 }
 
+/* Inside a feature group the icon sits glued to its value; the group gap
+   provides all separation. */
 .oracle-bar .info-box-container {
-  margin-left: 0.3rem;
-  margin-right: 1rem;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .oracle-bar .info-tooltip {
@@ -634,21 +2239,21 @@ input[type="range"] {
 }
 
 .warning-label {
-  color: #ff4444;
+  color: #ff2222;
   font-weight: bold;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   margin-left: 0.5rem;
   cursor: help;
-  text-shadow: 0 0 5px rgba(255, 68, 68, 0.4);
-  transition: color 0.3s;
+  text-shadow: 0 0 5px rgba(255, 34, 34, 0.5);
+  animation: warning-blink 1.2s infinite steps(1);
 }
 
 .warning-label:hover {
-  color: #ff0000;
+  color: #ffffff;
 }
 
 .info-tooltip.warning {
-  border-color: #ff4444;
+  border-color: #ff4444 var(--border-dark) var(--border-dark) #ff4444;
   width: 220px;
   left: 50%;
   transform: translateX(-50%);
@@ -656,10 +2261,10 @@ input[type="range"] {
 }
 
 .info-tooltip.warning h4 {
-  color: #ff4444;
+  color: #ff2222;
 }
 
-/* Mobile Responsive Styles */
+/* Mobile Responsive Styles (layout unchanged) */
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
@@ -670,9 +2275,10 @@ input[type="range"] {
     width: 100%;
     height: 50vh;
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 1rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border-bottom: 2px solid;
+    border-bottom-color: var(--border-light);
+    padding: 1rem 0.75rem;
+    box-shadow: none;
     order: 1;
   }
 
@@ -680,6 +2286,8 @@ input[type="range"] {
     height: 50vh;
     flex: none;
     order: 2;
+    padding: 0.35rem;
+    gap: 0.35rem;
   }
 
   .oracle-bar {
@@ -693,21 +2301,21 @@ input[type="range"] {
   .oracle-links {
     width: 100%;
     height: 32px;
-    background: #050505;
-    border-bottom: 1px solid #111;
+    background: var(--panel-bg-solid);
+    border-bottom: 1px solid var(--border-color);
     justify-content: center;
     gap: 2rem;
   }
 
   .oracle-data {
     width: 100%;
-    height: 32px;
-    background: #000;
-    position: static;
-    transform: none;
+    min-height: 32px;
+    background: var(--panel-bg-solid);
     justify-content: center;
-    gap: 1rem;
-    font-size: 0.65rem;
+    column-gap: 0.6rem;
+    row-gap: 0.1rem;
+    font-size: 0.62rem;
+    padding: 3px 6px;
     border-bottom: 1px solid var(--border-color);
   }
 
@@ -737,7 +2345,7 @@ input[type="range"] {
     left: 2vw;
     width: 96vw;
     height: 96vh;
-    padding: 1rem;
+    padding: 2rem 1rem 1rem;
   }
 
   .button-grid {
@@ -751,5 +2359,14 @@ input[type="range"] {
 
   .app-logo {
     margin-top: 0;
+  }
+}
+
+/* Respect reduced-motion: kill the flicker animations */
+@media (prefers-reduced-motion: reduce) {
+  .oracle-value,
+  .warning-label,
+  .confirm-title {
+    animation: none;
   }
 }

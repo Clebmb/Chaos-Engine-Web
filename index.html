@@ -10,6 +10,16 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    /* Apply the stored theme before first paint so there is never a
+       flash of the default theme on reload. Mirrors lib/themes.ts. */
+    (function () {
+      try {
+        var t = localStorage.getItem('chaos-engine-theme');
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

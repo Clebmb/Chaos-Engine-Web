@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getBinauralEngine, BRAINWAVES, SOLFEGGIO } from '../lib/binaural';
+import type { BeatMode } from '../lib/binaural';
+import { getAudioReactiveEngine } from '../lib/audioReactive';
 
 const TRACKS = [
     { name: 'Track 1', url: '/assets/track1.mp3' },
@@ -11,21 +14,26 @@ const AudioPlayer: React.FC = () => {
     const [currentTrack, setCurrentTrack] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolume] = useState(0.5);
-    const [toneFreq, setToneFreq] = useState(432);
     const [toneVolume, setToneVolume] = useState(0.1);
-    const [isTonePlaying, setIsTonePlaying] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const audioCtxRef = useRef<AudioContext | null>(null);
-    const oscRef = useRef<OscillatorNode | null>(null);
-    const gainRef = useRef<GainNode | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const engine = getBinauralEngine();
+    const [beatMode, setBeatMode] = useState<BeatMode>('binaural');
+    const [presetKey, setPresetKey] = useState('theta');
+    const [isTonePlaying, setIsTonePlaying] = useState(engine.isRunning);
 
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = volume;
         }
     }, [volume]);
+
+    // Offer the music element to the Listening Bone's internal source.
+    // The element is remounted on track change (key=), so re-register then.
+    useEffect(() => {
+        getAudioReactiveEngine().registerMediaElement(audioRef.current);
+    }, [currentTrack, tracks.length]);
 
     const togglePlay = () => {
         if (!audioRef.current) return;
@@ -49,43 +57,67 @@ const AudioPlayer: React.FC = () => {
     };
 
     const toggleTone = () => {
-        if (!audioCtxRef.current) {
-            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-
         if (isTonePlaying) {
-            oscRef.current?.stop();
+            engine.stop();
             setIsTonePlaying(false);
         } else {
-            const osc = audioCtxRef.current.createOscillator();
-            const gain = audioCtxRef.current.createGain();
-
-            osc.frequency.setValueAtTime(toneFreq, audioCtxRef.current.currentTime);
-            osc.type = 'sine';
-
-            gain.gain.setValueAtTime(toneVolume, audioCtxRef.current.currentTime);
-
-            osc.connect(gain);
-            gain.connect(audioCtxRef.current.destination);
-
-            osc.start();
-            oscRef.current = osc;
-            gainRef.current = gain;
+            applyPreset(presetKey);
+            engine.start();
             setIsTonePlaying(true);
         }
     };
 
+    /** Pushes the selected preset (and its mode) into the shared engine. */
+    const applyPreset = (key: string, mode?: BeatMode) => {
+        const preset = BRAINWAVES[key] || SOLFEGGIO[key];
+        if (!preset) return;
+        const isSolfeggio = !!SOLFEGGIO[key];
+        const useMode: BeatMode = mode ?? beatMode;
+        engine.setConfig({
+            mode: isSolfeggio && useMode === 'binaural' ? 'mono' : useMode,
+            baseHz: preset.baseHz,
+            beatHz: isSolfeggio ? 0 : preset.beatHz,
+            volume: toneVolume,
+        });
+    };
+
+    // Live-update the engine when the user changes preset/mode/volume.
     useEffect(() => {
-        if (oscRef.current && audioCtxRef.current) {
-            oscRef.current.frequency.setValueAtTime(toneFreq, audioCtxRef.current.currentTime);
-        }
-    }, [toneFreq]);
+        applyPreset(presetKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [presetKey, beatMode]);
 
     useEffect(() => {
-        if (gainRef.current && audioCtxRef.current) {
-            gainRef.current.gain.setTargetAtTime(toneVolume, audioCtxRef.current.currentTime, 0.05);
-        }
+        if (engine.isRunning) engine.setConfig({ volume: toneVolume });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [toneVolume]);
+
+    // Sync UI when the ritual sequencer drives the shared engine.
+    useEffect(() => {
+        const onPreset = (e: Event) => {
+            const d = (e as CustomEvent).detail;
+            if (d.preset) setPresetKey(d.preset);
+            if (d.mode) setBeatMode(d.mode);
+            setIsTonePlaying(!!d.playing);
+        };
+        window.addEventListener('chaos-audio-preset', onPreset);
+        return () => window.removeEventListener('chaos-audio-preset', onPreset);
+    }, []);
+
+    // Banish mode: kill music and entrainment instantly when the space is cleared.
+    useEffect(() => {
+        const onBanish = () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            engine.stop();
+            setIsPlaying(false);
+            setIsTonePlaying(false);
+        };
+        window.addEventListener('chaos-banish', onBanish);
+        return () => window.removeEventListener('chaos-banish', onBanish);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="audio-section">
@@ -126,15 +158,32 @@ const AudioPlayer: React.FC = () => {
 
             <div className="section-title">Frequency Generator</div>
             <div className="control-group">
-                <div className="frequency-input-group">
-                    <input
-                        type="text"
-                        value={toneFreq}
-                        onChange={(e) => setToneFreq(parseInt(e.target.value) || 0)}
-                        placeholder="Freq (Hz)..."
-                    />
-                    <button onClick={toggleTone}>{isTonePlaying ? 'Silence Tone' : 'Emit Frequency'}</button>
-                </div>
+                <select
+                    value={presetKey}
+                    onChange={(e) => setPresetKey(e.target.value)}
+                    aria-label="Entrainment preset"
+                >
+                    <optgroup label="Brainwaves">
+                        {Object.entries(BRAINWAVES).map(([key, p]) => (
+                            <option key={key} value={key}>{p.name} — {p.beatHz} Hz · {p.note}</option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Solfeggio">
+                        {Object.entries(SOLFEGGIO).map(([key, p]) => (
+                            <option key={key} value={key}>{p.name} · {p.note}</option>
+                        ))}
+                    </optgroup>
+                </select>
+                <select
+                    value={beatMode}
+                    onChange={(e) => setBeatMode(e.target.value as BeatMode)}
+                    aria-label="Beat mode"
+                >
+                    <option value="binaural">Binaural (headphones)</option>
+                    <option value="isochronic">Isochronic (speakers)</option>
+                    <option value="mono">Pure Tone</option>
+                </select>
+                <button onClick={toggleTone}>{isTonePlaying ? 'Silence Tone' : 'Emit Frequency'}</button>
                 <div className="slider-group">
                     <label>Tone Volume: {Math.round(toneVolume * 100)}%</label>
                     <input
