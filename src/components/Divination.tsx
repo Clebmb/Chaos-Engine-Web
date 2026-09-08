@@ -5,8 +5,10 @@ import {
     type GeoFigure, trigramName, ICHING_TRIGRAMS,
 } from '../lib/divination';
 import { lastEntropySource } from '../lib/entropy';
+import { addRecord, newId, moonPhase } from '../lib/grimoire';
+import type { ReadingRecord, DivinationSystem } from '../lib/grimoire';
 
-type System = 'geomancy' | 'runes' | 'tarot' | 'iching';
+type System = DivinationSystem;
 
 const GEO_ELEMENT_ROWS = ['Fire', 'Air', 'Water', 'Earth'];
 
@@ -47,6 +49,22 @@ const HexLines: React.FC<{ lines: number[]; changing?: number[] }> = ({ lines, c
     </div>
 );
 
+type readingUnion = GeoReading | RuneDraw | TarotDraw | IchingReading;
+
+/** One-line summary of a draw, stored in the grimoire and shown in lists. */
+function summarizeDraw(r: readingUnion): string {
+    if ('judge' in r) return `Judge ${r.judge.name} · Sentence ${r.sentence.name}`;
+    if ('stones' in r) {
+        return r.stones.map(s => `${s.rune.glyph} ${s.rune.name}${s.reversed ? ' (R)' : ''} — ${s.position}`).join(' · ');
+    }
+    if ('cards' in r) {
+        return r.cards.map(c => `${c.card.name}${c.reversed ? ' (R)' : ''} — ${c.position}`).join(' · ');
+    }
+    return r.secondary
+        ? `#${r.primary.number} ${r.primary.name} → #${r.secondary.number} ${r.secondary.name}`
+        : `#${r.primary.number} ${r.primary.name}`;
+}
+
 const SYSTEMS: Array<{ id: System; label: string }> = [
     { id: 'geomancy', label: 'Geomancy' },
     { id: 'runes', label: 'Runes' },
@@ -60,10 +78,13 @@ export const Divination: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [source, setSource] = useState<string>('');
     const [busy, setBusy] = useState(false);
     const [spread, setSpread] = useState<'single' | 'three'>('single');
+    const [question, setQuestion] = useState('');
+    const [savedId, setSavedId] = useState<string | null>(null);
 
     const cast = async () => {
         setBusy(true);
         setReading(null);
+        setSavedId(null);
         // brief pause so the "casting" state reads as a beat of ritual
         await new Promise(r => setTimeout(r, 350));
         try {
@@ -77,6 +98,30 @@ export const Divination: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         } finally {
             setBusy(false);
         }
+    };
+
+    const saveReading = () => {
+        if (!reading || savedId) return;
+        const spreadKey = 'spread' in reading
+            ? String(reading.spread)
+            : tab === 'geomancy' ? 'shield' : 'coin';
+        const record: ReadingRecord = {
+            kind: 'reading',
+            id: newId(),
+            createdAt: Date.now(),
+            moonPhase: moonPhase().phase,
+            system: tab,
+            spread: spreadKey,
+            question: question.trim(),
+            summary: summarizeDraw(reading),
+            draw: reading,
+            entropySource: (source || 'CSPRNG') as 'BEACON' | 'CSPRNG',
+            outcome: 'pending',
+            outcomeAt: null,
+            diaryId: null,
+        };
+        addRecord(record);
+        setSavedId(record.id);
     };
 
     const isGeo = (r: typeof reading): r is GeoReading => !!r && 'judge' in r;
@@ -106,12 +151,21 @@ export const Divination: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             role="tab"
                             aria-selected={tab === s.id}
                             className={`div-tab${tab === s.id ? ' active' : ''}`}
-                            onClick={() => { setTab(s.id); setReading(null); }}
+                            onClick={() => { setTab(s.id); setReading(null); setSavedId(null); }}
                         >
                             {s.label}
                         </button>
                     ))}
                 </div>
+
+                <input
+                    className="div-question-input"
+                    type="text"
+                    placeholder="Ask the oracle (optional)..."
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && cast()}
+                />
 
                 {(tab === 'runes' || tab === 'tarot') && (
                     <div className="div-spread-row">
@@ -126,6 +180,12 @@ export const Divination: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </button>
 
                 {busy && <div className="div-casting-note"> Consulting the stream… </div>}
+
+                {reading && (
+                    savedId
+                        ? <button className="div-save-button saved" disabled title="This reading is inscribed in your grimoire">✓ BOUND TO THE GRIMOIRE</button>
+                        : <button className="div-save-button" onClick={saveReading}>SAVE TO GRIMOIRE</button>
+                )}
 
                 {reading && isGeo(reading) && (
                     <div className="div-reading">

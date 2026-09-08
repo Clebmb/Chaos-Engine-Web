@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { SigilDrawer } from './components/SigilDrawer';
 import { Grimoire } from './components/Grimoire';
 import type { ServitorRecord } from './lib/grimoire';
+import { addRecord, newId, moonPhase } from './lib/grimoire';
 import Divination from './components/Divination';
 import type { FractalSnapshot as GrimoireSnapshot } from './lib/grimoire';
 import { RitualSequencer } from './components/RitualSequencer';
@@ -65,6 +66,10 @@ const App: React.FC = () => {
   const [showScribe, setShowScribe] = useState(false);
   const [isAnimating, setIsAnimating] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  /** Shrine mode: chrome stripped, fractal + intent only. Tap/key exits. */
+  const [shrine, setShrine] = useState(false);
+  const [shrineHintVisible, setShrineHintVisible] = useState(false);
+  const shrineHintTimer = useRef<number | null>(null);
 
   const [showDrawer, setShowDrawer] = useState(false);
   const [showGrimoire, setShowGrimoire] = useState(false);
@@ -275,15 +280,21 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      const isMobile = window.innerWidth <= 768;
-      setOverlay(prev => ({ ...prev, url, size: isMobile ? 65 : 200 }));
+      setOverlay(prev => {
+        // Animated GIFs ride the same path as statics (the <img> renders
+        // them natively); just release any previous blob URL.
+        if (prev.url?.startsWith('blob:')) URL.revokeObjectURL(prev.url);
+        const isMobile = window.innerWidth <= 768;
+        return { ...prev, url, size: isMobile ? 65 : 200 };
+      });
     }
   };
 
-  // Use a generated Spare glyph as the active overlay without uploading a file.
-  const handleUseGlyphAsOverlay = useCallback((dataUrl: string) => {
+  // Use a generated sigil as the active overlay without uploading a file.
+  // Receives a PNG data URL (still sigils) or a GIF blob URL (animated).
+  const handleUseGlyphAsOverlay = useCallback((url: string) => {
     const isMobile = window.innerWidth <= 768;
-    setOverlay(prev => ({ ...prev, url: dataUrl, size: isMobile ? 65 : 200 }));
+    setOverlay(prev => ({ ...prev, url, size: isMobile ? 65 : 200 }));
   }, []);
 
   const saveFractal = () => {
@@ -374,6 +385,22 @@ const App: React.FC = () => {
       },
     }; 
   }, [serializeState]);
+
+  /** Persists a minted ritual card as a sigil record carrying the PNG. */
+  const handleSaveCardToGrimoire = useCallback((card: { dataUrl: string; seedHash: string; intent: string }) => {
+    const { ritualLink, state } = captureRitualSpace();
+    addRecord({
+      kind: 'sigil',
+      id: newId(),
+      intent: card.intent,
+      createdAt: Date.now(),
+      moonPhase: moonPhase().phase,
+      ritualLink,
+      state,
+      cardDataUrl: card.dataUrl,
+      seedHash: card.seedHash,
+    });
+  }, [captureRitualSpace]);
 
   const engageRitualLink = useCallback((ritualLink: string) => {
     const restored = deserializeState(ritualLink);
@@ -592,8 +619,42 @@ const App: React.FC = () => {
   const seqImmersive = seqSidebarHidden;
   const collapsed = !sidebarOpen || seqImmersive;
 
+  const enterShrine = useCallback(() => {
+    setShrine(true);
+    setIsAnimating(true);
+    setShrineHintVisible(true);
+    if (shrineHintTimer.current) window.clearTimeout(shrineHintTimer.current);
+    shrineHintTimer.current = window.setTimeout(() => setShrineHintVisible(false), 4000);
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }, []);
+
+  const exitShrine = useCallback(() => {
+    setShrine(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
+
+  // Shrine hotkey: S toggles, Escape exits. Ignored while typing in fields.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === 'Escape') {
+        if (shrine) exitShrine();
+        return;
+      }
+      if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (shrine) exitShrine();
+        else enterShrine();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [shrine, enterShrine, exitShrine]);
+
   return (
-    <div className={`app-container${collapsed ? ' sidebar-collapsed' : ''}${seqImmersive ? ' seq-immersive' : ''}`}>
+    <div className={`app-container${collapsed ? ' sidebar-collapsed' : ''}${seqImmersive ? ' seq-immersive' : ''}${shrine ? ' shrine' : ''}`}>
       <aside
         className={`sidebar${(sidebarOpen && !seqSidebarHidden) ? '' : ' sidebar-hidden'}`}
         aria-hidden={!sidebarOpen || seqSidebarHidden}
@@ -690,7 +751,7 @@ const App: React.FC = () => {
             type="file"
             id="overlay-upload"
             style={{ display: 'none' }}
-            accept="image/*"
+            accept="image/png,image/gif,image/jpeg,image/webp,image/*"
             onChange={handleOverlayFileUpload}
           />
           <button className="secondary" onClick={() => document.getElementById('overlay-upload')?.click()}>
@@ -742,11 +803,10 @@ const App: React.FC = () => {
 
         <div className="section-title">Ritual Tools</div>
         <div className="control-group">
-          <a href="https://sigilarium.pages.dev" target="_blank" rel="noopener noreferrer" className="sigilarium-link">
-            <img src="/assets/sigilarium.webp" alt="Sigilarium" className="sigilarium-logo" />
-          </a>
+          <button className="sigilarium-launch" onClick={() => setShowDrawer(true)} title="The Sigilarium">
+            <img src="/assets/sigilarium.webp" alt="The Sigilarium" className="sigilarium-logo" />
+          </button>
           <button className="secondary" onClick={() => setShowScribe(true)}>Sigil Scribe</button>
-          <button className="secondary" onClick={() => setShowDrawer(true)}>Sigil Workshop</button>
           <button className="secondary" onClick={() => setShowGrimoire(true)}>Grimoire</button>
           <button className="secondary" onClick={() => setShowDivination(true)}>Divination</button>
           <button className="secondary" onClick={() => setIsAnimating(!isAnimating)}>
@@ -772,6 +832,7 @@ const App: React.FC = () => {
           }}>
             Copy Ritual Link
           </button>
+          <button className="secondary" onClick={enterShrine}>Shrine Mode</button>
           <button className="banish-button" onClick={() => setShowBanishConfirm(true)} disabled={isBanishing}>
             {isBanishing ? 'BANISHING...' : 'BANISH'}
           </button>
@@ -890,6 +951,8 @@ const App: React.FC = () => {
         <SigilDrawer
           onClose={() => setShowDrawer(false)}
           onUseAsOverlay={handleUseGlyphAsOverlay}
+          coords={coords}
+          onSaveCard={handleSaveCardToGrimoire}
         />
       )}
 
@@ -923,6 +986,20 @@ const App: React.FC = () => {
             setShowScribe(false); // Close after engaging
           }}
         />
+      )}
+
+      {shrine && (
+        <div
+          className="shrine-overlay"
+          onClick={exitShrine}
+          onTouchStart={exitShrine}
+          role="button"
+          aria-label="Exit shrine mode"
+        >
+          <div className={`shrine-hint${shrineHintVisible ? ' visible' : ''}`}>
+            TAP ANYWHERE TO RETURN
+          </div>
+        </div>
       )}
     </div>
   );

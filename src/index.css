@@ -90,6 +90,7 @@ body {
   flex-direction: column;
   padding: 1rem 0.75rem;
   overflow-y: auto;
+  overflow-x: hidden; /* overflow-y:auto would otherwise make x scrollable too */
   z-index: 10;
   position: relative;
 }
@@ -359,13 +360,22 @@ canvas {
   image-rendering: auto;
 }
 
-.sigilarium-link {
+/* The Sigilarium launcher: the old external-link image, now a button that
+   opens the Workshop (which carries the Sigilarium feature set). */
+.sigilarium-launch {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: 0.5rem;
-  transition: transform 0.3s ease;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   text-decoration: none;
+}
+
+.sigilarium-launch:active {
+  transform: scale(0.98);
 }
 
 .sigilarium-logo {
@@ -376,7 +386,7 @@ canvas {
   filter: drop-shadow(0 0 5px rgba(213, 0, 0, 0.25));
 }
 
-.sigilarium-link:hover .sigilarium-logo {
+.sigilarium-launch:hover .sigilarium-logo {
   filter: drop-shadow(0 0 20px var(--accent-glow));
   transform: scale(1.02);
 }
@@ -570,7 +580,10 @@ input[type="range"] {
   z-index: 200; /* above the oracle bar (z-index 100) so it never gets covered on mobile */
   display: flex;
   flex-direction: column;
-  padding: 2.25rem 1.5rem 1.5rem;
+  /* No horizontal padding: .modal-content is the full-bleed scroller so its
+     scrollbar hugs the window's right edge. Side gutters live on the
+     content instead (see --win-gutter). */
+  padding: 2.25rem 0 1.5rem;
   color: var(--fg-color);
   overflow: hidden;
 }
@@ -784,7 +797,94 @@ input[type="range"] {
 }
 
 .sigil-scribe-modal.drawer-title::before {
-  content: 'SIGIL WORKSHOP';
+  content: 'THE SIGILARIUM';
+}
+
+/* ---- Sigilarium source-mode pills ---- */
+.mode-selector {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.mode-selector label {
+  flex: 1 1 0;
+  min-width: 56px;
+  background: var(--panel-raised);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  padding: 0.4rem 0.2rem;
+  font-size: 0.7rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  user-select: none;
+}
+
+.mode-selector label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-selector label.active {
+  background: var(--accent-color);
+  color: #000;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  box-shadow: 0 0 10px var(--accent-glow);
+  font-weight: bold;
+}
+
+.mode-selector label:hover:not(.active) {
+  filter: brightness(1.2);
+}
+
+/* ---- Temporal Ebb: the six Sigilarium animations ---- */
+.animation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.animation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-light);
+  background: var(--panel-raised);
+}
+
+.anim-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.anim-header input {
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+.anim-speed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--dim-text);
+  font-family: var(--font-mono);
+}
+
+.anim-speed input {
+  width: 58px;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.75rem;
 }
 
 /* BANISH: the one button that is allowed to look dangerous */
@@ -902,8 +1002,12 @@ input[type="range"] {
   content: 'DIVINATION';
 }
 
-.divination-content {
-  max-width: 1000px;
+/* Narrow form column for the wizard; the scrollbar still rides the window
+   edge because .modal-content itself remains the full-bleed scroller. */
+.servitor-wizard-window .modal-content {
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 0 max(var(--win-gutter, 1.5rem), calc((100% - 560px) / 2));
 }
 
 .div-source-seal {
@@ -952,6 +1056,23 @@ input[type="range"] {
   letter-spacing: 0.08rem;
 }
 
+.div-question-input {
+  width: 100%;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--input-bg, #0a0a0a);
+  color: var(--fg-color);
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  outline: none;
+}
+
+.div-question-input:focus {
+  border-color: var(--accent-text, #ff4444);
+}
+
 .div-cast-button {
   width: 100%;
   letter-spacing: 0.3rem;
@@ -959,6 +1080,21 @@ input[type="range"] {
   padding: 0.75rem;
   margin-bottom: 1rem;
   text-shadow: 0 0 6px var(--accent-glow);
+}
+
+.div-save-button {
+  width: 100%;
+  letter-spacing: 0.2rem;
+  font-size: 0.7rem;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.div-save-button.saved {
+  opacity: 0.75;
+  cursor: default;
+  color: #66ff88;
+  text-shadow: 0 0 6px rgba(102, 255, 136, 0.35);
 }
 
 .div-casting-note {
@@ -1360,7 +1496,7 @@ input[type="range"] {
 }
 
 .grimoire-content {
-  max-width: 900px;
+  max-width: none;
 }
 
 .grimoire-tabs {
@@ -1530,9 +1666,11 @@ input[type="range"] {
 }
 
 .servitor-wizard-window .modal-content {
-  max-width: 560px;
   max-height: 92vh;
   overflow-y: auto;
+  /* Narrow 560px form column, centered — but the scrollbar stays at the
+     window's right edge because the scroller itself is full-bleed. */
+  padding: 0 max(var(--win-gutter, 1.5rem), calc((100% - 560px) / 2));
 }
 
 .wizard-steps {
@@ -1728,6 +1866,341 @@ input[type="range"] {
 .outcome-failed {
   color: #ff6666;
   text-shadow: 0 0 6px rgba(255, 102, 102, 0.4);
+}
+
+/* Reading outcomes (divination journaling) */
+.outcome-hit {
+  color: #66ff88;
+  border-color: #2a5a2a #113311 #113311 #2a5a2a;
+  text-shadow: 0 0 6px rgba(102, 255, 136, 0.4);
+}
+
+.outcome-miss {
+  color: #ff6666;
+  text-shadow: 0 0 6px rgba(255, 102, 102, 0.4);
+}
+
+.outcome-unclear {
+  color: #88bbff;
+  border-color: #1a3a5a #0a1a33 #0a1a33 #1a3a5a;
+  text-shadow: 0 0 6px rgba(136, 187, 255, 0.4);
+}
+
+.reading-system-tag {
+  align-self: flex-start;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--accent-text, #ff4444);
+  border: 1px solid currentColor;
+  padding: 3px 6px;
+  margin-top: 2px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.grimoire-link-select {
+  max-width: 150px;
+  font-size: 0.62rem;
+  padding: 3px 4px;
+}
+
+.reading-diary-link {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--dim-text);
+  margin-top: 4px;
+}
+
+/* Ritual card overlay + preview (Sigil Workshop) */
+.ritual-card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300; /* above the 95 windows (z-index 200) that spawn it */
+  padding: 1rem;
+}
+
+.ritual-card-preview {
+  position: relative;
+  max-width: min(480px, 92vw);
+  max-height: 94vh;
+  overflow-y: auto;
+  text-align: center;
+  padding: 1.2rem 1.4rem 1rem;
+}
+
+.ritual-card-image {
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  image-rendering: auto;
+}
+
+.ritual-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.ritual-card-seal {
+  margin-top: 0.5rem;
+  font-size: 0.65rem;
+}
+
+.ritual-card-thumb {
+  width: 84px;
+  height: 112px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  image-rendering: auto;
+}
+
+/* Anchor styled as a 95 button (card download link) */
+a.mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ---------------- Shrine mode ---------------- */
+/* Chrome stripped: sidebar and oracle bar vanish, the fractal fills the
+   viewport, and the statement of intent pulses on screen. The overlay
+   (z-index above every window) exits on any tap; the cursor hides too. */
+.app-container.shrine > aside {
+  display: none !important;
+}
+
+.app-container.shrine .oracle-bar {
+  display: none !important;
+}
+
+.app-container.shrine .main-view {
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+}
+
+.app-container.shrine .fractal-canvas-container {
+  border: none;
+  box-shadow: none;
+}
+
+.shrine-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400; /* above every 95 window and the ritual-card overlay */
+  cursor: none;
+}
+
+.shrine-hint {
+  position: absolute;
+  bottom: 2.5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 42, 42, 0.5);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+
+.shrine-hint.visible {
+  opacity: 1;
+}
+
+/* ---------------- Ritual sequence builder ---------------- */
+.sigil-scribe-modal.seq-builder::before {
+  content: 'RITUAL FORGE';
+}
+
+.seq-build-button {
+  margin-bottom: 0.5rem;
+}
+
+.seq-custom-badge {
+  color: var(--accent-text, #ff4444);
+  font-weight: bold;
+}
+
+.seq-custom-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.seqb-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.seqb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: var(--dim-text);
+  flex: 1;
+  min-width: 0;
+}
+
+.seqb-field input,
+.seqb-field select,
+.seqb-field textarea {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--input-bg, #0a0a0a);
+  color: var(--fg-color);
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  padding: 0.3rem 0.4rem;
+  outline: none;
+  resize: vertical;
+}
+
+.seqb-phase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.seqb-phase {
+  border: 2px solid;
+  border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+  background: var(--panel-bg);
+}
+
+.seqb-phase.open {
+  border-color: var(--accent-text, #ff4444);
+}
+
+.seqb-phase-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem;
+}
+
+.seqb-phase-toggle {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--fg-color);
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.seqb-phase-toggle:hover {
+  color: var(--accent-text, #ff4444);
+}
+
+.seqb-phase-num {
+  color: var(--dim-text);
+}
+
+.seqb-phase-tags {
+  display: inline-flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.seqb-tag {
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  color: var(--dim-text);
+  border: 1px solid currentColor;
+  padding: 0 4px;
+}
+
+.seqb-phase-remove {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.seqb-phase-body {
+  padding: 0.5rem;
+  border-top: 1px solid var(--border-dark);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.seqb-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.seqb-row .seqb-field {
+  flex: 1 1 120px;
+}
+
+.seqb-toggles {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.seqb-effects-label {
+  font-size: 0.62rem;
+  color: var(--dim-text);
+  letter-spacing: 0.08em;
+}
+
+.seqb-effects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.3rem;
+}
+
+.seqb-effect {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.6rem;
+  color: var(--dim-text);
+}
+
+.seqb-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.seqb-total {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--dim-text);
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---------------- Breath pacer overlay ---------------- */
@@ -2031,11 +2504,19 @@ input[type="range"] {
   font-family: var(--font-mono);
 }
 
+/* Side gutter for 95 windows; widened context overrides below. */
+.sigil-scribe-modal {
+  --win-gutter: 1.5rem;
+}
+
+/* The scroll container spans the full window so its scrollbar sits at the
+   window's right edge (not partway in, which a centered max-width column
+   caused). The content column is centered via symmetric padding: the design
+   width plus at least one gutter of breathing room on each side. */
 .modal-content {
   overflow-y: auto;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
+  padding: 0 max(var(--win-gutter, 1.5rem), calc((100% - 1200px) / 2));
 }
 
 .close-button {
@@ -2213,6 +2694,18 @@ input[type="range"] {
   font-family: var(--font-family);
 }
 
+/* Sidebar tooltips: the ? icons sit near the right edge, so centering a
+   240px tooltip overflows the panel (and used to force a horizontal
+   scrollbar). Nudge left so the bubble fits inside the sidebar. */
+.sidebar .info-tooltip {
+  left: calc(50% - 16px);
+}
+
+/* The DATA WARNING bubble sits furthest right; it needs the full nudge. */
+.sidebar .info-box-container.warning .info-tooltip {
+  left: calc(50% - 34px);
+}
+
 .info-tooltip h4 {
   color: var(--accent-color);
   margin-bottom: 0.4rem;
@@ -2345,7 +2838,10 @@ input[type="range"] {
     left: 2vw;
     width: 96vw;
     height: 96vh;
-    padding: 2rem 1rem 1rem;
+    /* Keep the scroller full-bleed here too (scrollbar at the edge);
+       the side inset comes from --win-gutter on .modal-content. */
+    padding: 2rem 0 1rem;
+    --win-gutter: 1rem;
   }
 
   .button-grid {

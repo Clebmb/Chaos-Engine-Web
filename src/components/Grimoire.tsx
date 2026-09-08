@@ -4,7 +4,7 @@ import {
     downloadJson, importJson, saveToFile, loadFromFile, fsaSupported,
     formatMoon, moonPhase,
 } from '../lib/grimoire';
-import type { Grimoire as GrimoireData, GrimoireRecord, SigilRecord, DiaryRecord, ServitorRecord, DiaryOutcome, FractalSnapshot, ServitorDraft } from '../lib/grimoire';
+import type { Grimoire as GrimoireData, GrimoireRecord, SigilRecord, DiaryRecord, ServitorRecord, ReadingRecord, DiaryOutcome, ReadingOutcome, FractalSnapshot, ServitorDraft } from '../lib/grimoire';
 import { ServitorWizard } from './ServitorWizard';
 
 interface GrimoireProps {
@@ -17,7 +17,7 @@ interface GrimoireProps {
     onAwaken: (rec: ServitorRecord) => void;
 }
 
-type Tab = 'sigils' | 'diary' | 'servitors';
+type Tab = 'sigils' | 'diary' | 'servitors' | 'readings';
 
 const PREVIEW_W = 120;
 const PREVIEW_H = 90;
@@ -101,6 +101,19 @@ const GrimoirePreview: React.FC<{ state: FractalSnapshot | null }> = ({ state })
 };
 
 const OUTCOMES: DiaryOutcome[] = ['pending', 'manifested', 'partial', 'failed'];
+const READING_OUTCOMES: ReadingOutcome[] = ['pending', 'hit', 'miss', 'unclear'];
+const READING_BADGES: Record<ReadingOutcome, string> = {
+    pending: '◌ PENDING',
+    hit: '✔ HIT',
+    miss: '✕ MISS',
+    unclear: '∿ UNCLEAR',
+};
+const SYSTEM_TAGS: Record<ReadingRecord['system'], string> = {
+    geomancy: 'GEOMANCY',
+    runes: 'RUNES',
+    tarot: 'TAROT',
+    iching: 'I CHING',
+};
 
 const fmtDate = (t: number) => new Date(t).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -119,6 +132,7 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
     const sigils = grimoire.records.filter((r): r is SigilRecord => r.kind === 'sigil');
     const diary = grimoire.records.filter((r): r is DiaryRecord => r.kind === 'diary');
     const servitors = grimoire.records.filter((r): r is ServitorRecord => r.kind === 'servitor');
+    const readings = grimoire.records.filter((r): r is ReadingRecord => r.kind === 'reading');
 
     const flash = (msg: string) => {
         setNotice(msg);
@@ -184,6 +198,18 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
         } as Partial<DiaryRecord>));
     };
 
+    const cycleReadingOutcome = (rec: ReadingRecord) => {
+        const next = READING_OUTCOMES[(READING_OUTCOMES.indexOf(rec.outcome) + 1) % READING_OUTCOMES.length];
+        setGrimoire(updateRecord(rec.id, {
+            outcome: next,
+            outcomeAt: next === 'pending' ? null : Date.now(),
+        } as Partial<ReadingRecord>));
+    };
+
+    const linkReadingDiary = (rec: ReadingRecord, diaryId: string) => {
+        setGrimoire(updateRecord(rec.id, { diaryId: diaryId || null } as Partial<ReadingRecord>));
+    };
+
     const remove = (rec: GrimoireRecord) => {
         setGrimoire(deleteRecord(rec.id));
     };
@@ -208,7 +234,7 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
                 </p>
 
                 <div className="grimoire-tabs" role="tablist">
-                    {(['sigils', 'diary', 'servitors'] as Tab[]).map(t => (
+                    {(['sigils', 'diary', 'servitors', 'readings'] as Tab[]).map(t => (
                         <button
                             key={t}
                             role="tab"
@@ -216,7 +242,10 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
                             className={`grimoire-tab${tab === t ? ' active' : ''}`}
                             onClick={() => setTab(t)}
                         >
-                            {t === 'sigils' ? `Sigils (${sigils.length})` : t === 'diary' ? `Diary (${diary.length})` : `Servitors (${servitors.length})`}
+                            {t === 'sigils' ? `Sigils (${sigils.length})`
+                                : t === 'diary' ? `Diary (${diary.length})`
+                                : t === 'servitors' ? `Servitors (${servitors.length})`
+                                : `Readings (${readings.length})`}
                         </button>
                     ))}
                     <div className="grimoire-data-buttons">
@@ -270,14 +299,20 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
                             {sigils.length === 0 && <p className="grimoire-empty">No sigils bound yet. Set up a ritual space and capture it.</p>}
                             {sigils.map(rec => (
                                 <div className="grimoire-record" key={rec.id}>
-                                    <GrimoirePreview state={rec.state} />
+                                    {rec.cardDataUrl
+                                        ? <img src={rec.cardDataUrl} alt={`${rec.intent} ritual card`} className="ritual-card-thumb" />
+                                        : <GrimoirePreview state={rec.state} />}
                                     <div className="grimoire-record-info">
                                         <div className="grimoire-record-title">{rec.intent}</div>
                                         <div className="grimoire-record-meta">
                                             {fmtDate(rec.createdAt)} · {formatMoon(rec.createdAt)} · iter {rec.state.maxIterations}
+                                            {rec.seedHash && <> · ◈ {rec.seedHash.slice(0, 10)}…</>}
                                         </div>
                                         <div className="grimoire-record-actions">
                                             <button className="mini" onClick={() => onEngage(rec.ritualLink)}>Engage</button>
+                                            {rec.cardDataUrl && (
+                                                <a className="mini" href={rec.cardDataUrl} download={`ritual_card_${rec.id}.png`}>Card PNG</a>
+                                            )}
                                             <button className="mini secondary" onClick={() => remove(rec)}>Release</button>
                                         </div>
                                     </div>
@@ -321,6 +356,7 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
                                             <div className="grimoire-record-meta">
                                                 {fmtDate(rec.createdAt)} · {formatMoon(rec.createdAt)}
                                                 {linked && <> · sigil: {linked.intent}</>}
+                                                {readings.some(r => r.diaryId === rec.id) && <> · reading linked</>}
                                             </div>
                                             {rec.body && <p className="grimoire-record-body">{rec.body}</p>}
                                             <div className="grimoire-record-actions">
@@ -390,6 +426,51 @@ export const Grimoire: React.FC<GrimoireProps> = ({ onClose, captureCurrent, onE
                             />
                         )}
                     </>
+                )}
+
+                {/* ---------- READINGS ---------- */}
+                {tab === 'readings' && (
+                    <div className="grimoire-list">
+                        {readings.length === 0 && <p className="grimoire-empty">No readings bound. Cast in the Divination suite and save the draw.</p>}
+                        {readings.map(rec => {
+                            const linkedDiary = rec.diaryId ? diary.find(d => d.id === rec.diaryId) : null;
+                            return (
+                                <div className="grimoire-record" key={rec.id}>
+                                    <div className="reading-system-tag" title={`${rec.system} · ${rec.spread} spread`}>
+                                        {SYSTEM_TAGS[rec.system]}
+                                    </div>
+                                    <div className="grimoire-record-info">
+                                        <div className="grimoire-record-title">{rec.question || 'Blind cast'}</div>
+                                        <div className="grimoire-record-meta">
+                                            {fmtDate(rec.createdAt)} · {formatMoon(rec.createdAt)} · {rec.spread} · ◈ {rec.entropySource}
+                                            {rec.outcomeAt && <> · judged {fmtDate(rec.outcomeAt)}</>}
+                                        </div>
+                                        <p className="grimoire-record-body">{rec.summary}</p>
+                                        <div className="grimoire-record-actions">
+                                            <button
+                                                className={`mini outcome-badge outcome-${rec.outcome}`}
+                                                onClick={() => cycleReadingOutcome(rec)}
+                                                title="Click to cycle: did the reading prove true?"
+                                            >
+                                                {READING_BADGES[rec.outcome]}
+                                            </button>
+                                            <select
+                                                className="grimoire-link-select"
+                                                value={rec.diaryId ?? ''}
+                                                onChange={(e) => linkReadingDiary(rec, e.target.value)}
+                                                title="Attach this reading to a diary entry"
+                                            >
+                                                <option value="">Linked diary: none</option>
+                                                {diary.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
+                                            </select>
+                                            <button className="mini secondary" onClick={() => remove(rec)}>Burn</button>
+                                        </div>
+                                        {linkedDiary && <div className="reading-diary-link">→ diary: {linkedDiary.title}</div>}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
         </div>

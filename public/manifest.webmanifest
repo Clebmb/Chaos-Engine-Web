@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "Chaos Engine — Digital Ritual Chamber",
+  "short_name": "Chaos Engine",
+  "description": "A digital chaos magick toolkit: fractal ritual space, sigil workshop, grimoire, divination suite, servitors, and a listening engine.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050000",
+  "theme_color": "#1a0000",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/logo.webp",
+      "sizes": "2048x2048",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/logo.webp",
+      "sizes": "2048x2048",
+      "type": "image/webp",
+      "purpose": "maskable"
+    }
+  ]
+}

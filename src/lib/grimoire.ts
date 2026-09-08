@@ -1,10 +1,11 @@
 /**
  * The Grimoire — local persistence for the practitioner's records.
  *
- * Three record types:
+ * Four record types:
  *  - Sigil:    a saved fractal ritual space (intent + renderer state + metadata)
  *  - Diary:    a ritual diary entry with a manifestation follow-up outcome
  *  - Servitor: a created entity with a home world (fractal state) and duties
+ *  - Reading:  a divination draw (question + full draw + verified outcome)
  *
  * Records live in localStorage under a single namespaced key. JSON export/
  * import moves the whole grimoire between machines; File System Access
@@ -35,6 +36,10 @@ export interface SigilRecord {
     /** The exact URL query string for this ritual space, ready to restore. */
     ritualLink: string;
     state: FractalSnapshot;
+    /** Ritual card PNG (data URL) if one was minted for this working. */
+    cardDataUrl?: string | null;
+    /** Entropy hash sealed into the card, if present. */
+    seedHash?: string | null;
 }
 
 export type DiaryOutcome = 'pending' | 'manifested' | 'partial' | 'failed';
@@ -80,7 +85,48 @@ export interface ServitorRecord {
 export type ServitorDraft = Omit<ServitorRecord,
     'kind' | 'id' | 'createdAt' | 'moonPhase' | 'homeWorld' | 'ritualLink'>;
 
-export type GrimoireRecord = SigilRecord | DiaryRecord | ServitorRecord;
+/** Outcome of a divination draw, judged when the question resolves. */
+export type ReadingOutcome = 'pending' | 'hit' | 'miss' | 'unclear';
+
+export type DivinationSystem = 'geomancy' | 'runes' | 'tarot' | 'iching';
+
+export interface ReadingRecord {
+    kind: 'reading';
+    id: string;
+    createdAt: number;
+    moonPhase: MoonPhase;
+    system: DivinationSystem;
+    /** Spread used: 'shield' | 'single' | 'norns' | 'three' | 'coin'. */
+    spread: string;
+    /** The question asked, or '' for a blind cast. */
+    question: string;
+    /** Human-readable one-liner of the draw (judge / stones / cards / hexagrams). */
+    summary: string;
+    /** The full draw payload, faithful enough to re-display. */
+    draw: import('./divination').GeoReading |
+          import('./divination').RuneDraw |
+          import('./divination').TarotDraw |
+          import('./divination').IchingReading;
+    /** Provenance of the entropy that produced the draw. */
+    entropySource: 'BEACON' | 'CSPRNG';
+    outcome: ReadingOutcome;
+    outcomeAt: number | null;
+    /** Optional link to the diary entry written about this reading. */
+    diaryId: string | null;
+}
+
+export type GrimoireRecord = SigilRecord | DiaryRecord | ServitorRecord | ReadingRecord | CustomSequenceRecord;
+
+/** A practitioner-authored ritual sequence, launched from the sequencer. */
+export interface CustomSequenceRecord {
+    kind: 'sequence';
+    id: string;
+    createdAt: number;
+    name: string;
+    note: string;
+    /** Full phase definitions — the sequencer runs these verbatim. */
+    phases: import('./ritualEngine').PhaseDefinition[];
+}
 
 /** Sentinel preset key meaning “no tone” — distinct from null (legacy rows). */
 export const SERVITOR_SILENT = '__silent__';
@@ -171,7 +217,7 @@ export function addRecord(record: GrimoireRecord): Grimoire {
     return g;
 }
 
-export function updateRecord(id: string, patch: Partial<DiaryRecord> & { kind?: 'diary' } | Partial<ServitorRecord> | Partial<SigilRecord>): Grimoire {
+export function updateRecord(id: string, patch: Partial<DiaryRecord> & { kind?: 'diary' } | Partial<ServitorRecord> | Partial<SigilRecord> | Partial<ReadingRecord> | Partial<CustomSequenceRecord>): Grimoire {
     const g = loadGrimoire();
     const idx = g.records.findIndex(r => r.id === id);
     if (idx >= 0) {
