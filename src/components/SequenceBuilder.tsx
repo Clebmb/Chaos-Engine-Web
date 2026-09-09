@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RITUAL_PRESETS } from '../lib/ritualEngine';
-import type { PhaseDefinition, EffectPreset, AudioPhaseConfig, BreathPattern, RitualPhase } from '../lib/ritualEngine';
+import type { PhaseDefinition, EffectPreset, AudioPhaseConfig, BreathPattern, JuliaMorphMode, RitualPhase } from '../lib/ritualEngine';
 import { BRAINWAVES, SOLFEGGIO } from '../lib/binaural';
 import { addRecord, updateRecord, newId } from '../lib/grimoire';
 import type { CustomSequenceRecord, Grimoire } from '../lib/grimoire';
@@ -163,6 +163,7 @@ export const SequenceBuilder: React.FC<SequenceBuilderProps> = ({ existing, onCl
                                         <span className="seqb-tag">{p.duration > 0 ? `${p.duration}s` : 'manual'}</span>
                                         {p.audio.kind === 'binaural' && <span className="seqb-tag">♪ {p.audio.preset}</span>}
                                         {p.breath !== 'off' && <span className="seqb-tag">breath</span>}
+                                        {p.juliaMorph && p.juliaMorph !== 'off' && <span className="seqb-tag">morph</span>}
                                         {p.hideSidebar && <span className="seqb-tag">immersive</span>}
                                         {p.freezeMotion && <span className="seqb-tag">stasis</span>}
                                     </span>
@@ -277,6 +278,47 @@ export const SequenceBuilder: React.FC<SequenceBuilderProps> = ({ existing, onCl
                                                 <option value="resonance">Resonance</option>
                                             </select>
                                         </label>
+                                    </div>
+
+                                    <div className="seqb-row">
+                                        <label className="seqb-field">
+                                            Julia Morph
+                                            <select
+                                                value={p.juliaMorph ?? 'off'}
+                                                onChange={(e) => setPhase(i, { juliaMorph: e.target.value as JuliaMorphMode })}
+                                            >
+                                                <option value="off">Off</option>
+                                                <option value="orbit">Orbit</option>
+                                                <option value="lissajous">Lissajous</option>
+                                                <option value="drift">Drift</option>
+                                            </select>
+                                        </label>
+                                        {(p.juliaMorph ?? 'off') !== 'off' && (
+                                            <>
+                                                <label className="seqb-field">
+                                                    Radius
+                                                    <input
+                                                        type="number"
+                                                        min={0.02}
+                                                        max={0.4}
+                                                        step={0.01}
+                                                        value={p.morphRadius ?? 0.15}
+                                                        onChange={(e) => setPhase(i, { morphRadius: Math.min(0.4, Math.max(0.02, parseFloat(e.target.value) || 0.15)) })}
+                                                    />
+                                                </label>
+                                                <label className="seqb-field">
+                                                    Speed
+                                                    <input
+                                                        type="number"
+                                                        min={0.02}
+                                                        max={0.5}
+                                                        step={0.01}
+                                                        value={p.morphSpeed ?? 0.12}
+                                                        onChange={(e) => setPhase(i, { morphSpeed: Math.min(0.5, Math.max(0.02, parseFloat(e.target.value) || 0.12)) })}
+                                                    />
+                                                </label>
+                                            </>
+                                        )}
                                     </div>
 
                                     <div className="seqb-toggles">

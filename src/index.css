@@ -134,6 +134,12 @@ canvas {
   max-height: 100%;
 }
 
+/* The fractal canvas handles its own touch gestures (drag-pan, pinch-zoom
+   to the midpoint) — stop the browser hijacking them for scroll/refresh. */
+.fractal-canvas-container canvas {
+  touch-action: none;
+}
+
 /* Oracle bar: 95 window title strip. container-type lets the data row size
    its type/gaps in cqi units — relative to the bar's real width, which the
    viewport units can't know (the bar is narrower than the window whenever
@@ -551,6 +557,106 @@ button.active {
   font-family: var(--font-mono);
   letter-spacing: 0.05rem;
   text-transform: uppercase;
+}
+
+/* ------- Palette Forge ------- */
+.palette-editor {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 210;
+  width: min(320px, calc(100vw - 2.4rem));
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--panel-bg, #1a0000);
+  border: 2px solid;
+  border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.85);
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.palette-preview {
+  height: 34px;
+  border: 1px solid var(--border-dark);
+  box-shadow: inset 1px 1px 0 #000;
+}
+
+.palette-stop-row {
+  display: flex;
+  gap: 4px;
+}
+
+.palette-stop-row .color-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 1px;
+}
+
+.palette-editor-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 5px;
+}
+
+.palette-editor-actions button {
+  font-size: 0.68rem;
+  padding: 6px 4px;
+}
+
+.palette-custom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.palette-custom-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.palette-custom-load {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 4px 6px;
+}
+
+.palette-custom-swatch {
+  width: 44px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-dark);
+}
+
+.palette-custom-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+}
+
+.palette-custom-delete {
+  flex-shrink: 0;
+  width: 26px;
+  padding: 0;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 768px) {
+  .palette-editor {
+    right: 0.6rem;
+    left: 0.6rem;
+    bottom: 0.6rem;
+    width: auto;
+  }
 }
 
 /* Chunky red-on-black range sliders */
@@ -1663,6 +1769,60 @@ input[type="range"] {
 .servitor-awaken {
   font-weight: bold;
   letter-spacing: 0.05rem;
+}
+
+/* ---------- Grimoire Places (the map of the spirit worlds) ---------- */
+
+.places-note {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--tip-text);
+  margin: 0 0 0.6rem;
+  line-height: 1.5;
+}
+
+.place-record .grimoire-preview {
+  border-color: var(--border-light);
+}
+
+/* Decay: the record itself sickens as neglect deepens. */
+.place-record.decay-1 {
+  border-left: 3px solid var(--accent-color);
+}
+.place-record.decay-2 {
+  border-left: 3px solid var(--accent-color);
+  background: rgba(139, 0, 0, 0.12);
+}
+.place-record.decay-3 {
+  border-left: 3px solid #ff2020;
+  background: rgba(139, 0, 0, 0.25);
+  animation: decay-pulse 2.6s ease-in-out infinite;
+}
+.place-record.decay-4 {
+  border-left: 3px solid #ff2020;
+  background: rgba(139, 0, 0, 0.38);
+  animation: decay-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes decay-pulse {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(1.18) saturate(1.25); }
+}
+
+.decay-note {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: #ff5a5a;
+  letter-spacing: 0.03rem;
+}
+
+.servitor-feed {
+  font-weight: bold;
+}
+.servitor-feed.urgent {
+  color: #ff5a5a;
+  border-color: #ff5a5a;
+  animation: decay-pulse 1.6s ease-in-out infinite;
 }
 
 .servitor-wizard-window .modal-content {

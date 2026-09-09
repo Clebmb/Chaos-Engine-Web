@@ -17,9 +17,68 @@ import { Renderer } from './engine/Renderer';
 import type { RendererState } from './engine/Renderer';
 import SigilScribe from './components/SigilScribe';
 import AudioPlayer from './components/AudioPlayer';
+import { PALETTES, DEFAULT_PALETTE_KEY, getPalette, listCustomPalettes, paletteExists, customToPalette, upsertCustomPalette } from './engine/palettes';
+import type { CustomPaletteDraft } from './engine/palettes';
+import { FRACTAL_TYPES, MAX_FRACTAL_ID, fractalName } from './engine/fractals';
+import { drawEntropy } from './lib/entropy';
+import { startFilm, filmSupported } from './lib/filmRecorder';
+import type { FilmSession } from './lib/filmRecorder';
+import { createBuddhabrot } from './engine/buddhabrot';
+import type { BuddhabrotAcc } from './engine/buddhabrot';
+import PaletteEditor from './components/PaletteEditor';
+
+/** Packs a stop as 6 hex chars for the pd= link param. */
+function stopHexCompact(stop: [number, number, number]): string {
+  const h = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, '0');
+  return h(stop[0]) + h(stop[1]) + h(stop[2]);
+}
 import Oracle from './components/Oracle';
 import DigitalAlchemy from './components/DigitalAlchemy';
 import OverlaySystem from './components/OverlaySystem';
+import type { JuliaMorphMode } from './lib/ritualEngine';
+
+/**
+ * Julia morph path — animates the seed c so the set shapeshifts.
+ *
+ *   orbit:     circle around the base (the set undulates steadily)
+ *   lissajous: figure-eight sweep (breathes between connected forms)
+ *   drift:     sum of incommensurate sines — a smooth organic wander
+ *
+ * All three stay within `radius` of the base, so the Julia set remains
+ * mostly connected and the working keeps its identity. Time is the same
+ * `currentTime` that drives the fractal, so freezeMotion halts the morph.
+ */
+function morphJuliaC(
+    base: [number, number],
+    mode: JuliaMorphMode,
+    radius: number,
+    speed: number,
+    t: number,
+): [number, number] {
+    const th = speed * t;
+    switch (mode) {
+        case 'orbit':
+            return [base[0] + radius * Math.cos(th), base[1] + radius * Math.sin(th)];
+        case 'lissajous':
+            return [
+                base[0] + radius * Math.sin(th),
+                base[1] + radius * 0.6 * Math.sin(2 * th),
+            ];
+        case 'drift':
+            // Incommensurate frequencies: never visibly repeats.
+            return [
+                base[0] + radius * (0.7 * Math.sin(th) + 0.3 * Math.sin(th * 2.71)),
+                base[1] + radius * (0.7 * Math.cos(th * 1.41) + 0.3 * Math.cos(th * 0.37)),
+            ];
+        default:
+            return base;
+    }
+}
+
+/** Default fractal resolution: richer on desktop, cheaper on mobile. */
+function defaultMaxIterations(): number {
+  return window.innerWidth <= 768 ? 125 : 250;
+}
 
 const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +87,7 @@ const App: React.FC = () => {
   const [state, setState] = useState<RendererState>({
     center: [-0.5, 0],
     zoom: 3.5,
-    maxIterations: 100,
+    maxIterations: defaultMaxIterations(),
     type: 0,
     juliaC: [-0.7, 0.27],
     time: 0,
@@ -46,7 +105,22 @@ const App: React.FC = () => {
     },
     accentColor: [1, 0, 0],
     chaosFactor: 0,
+    juliaMorph: 'off' as const,
+    morphRadius: 0.15,
+    morphSpeed: 0.12,
+    paletteKey: DEFAULT_PALETTE_KEY,
+    paletteShift: 0,
+    trap: 0,
+    trapSize: 0.5,
+    buddhabrot: false,
   });
+  /** Buddhabrot accumulator — the ghost emerges while it's non-null. */
+  const bbAccumRef = useRef<BuddhabrotAcc | null>(null);
+  const bbLastUploadRef = useRef(0);
+  const bbStatsRef = useRef(0);
+  const [bbStats, setBbStats] = useState<{ orbits: number } | null>(null);
+  /** Accumulation work per frame (iterations) — ~1ms of CPU on desktop. */
+  const BB_STEP_BUDGET = 150000;
 
   const [overlay, setOverlay] = useState<{
     url: string | null;
@@ -62,12 +136,57 @@ const App: React.FC = () => {
     speed: 1,
   });
 
+  /** Editor draft preview: renders these stops directly, bypassing state. */
+  const [palettePreview, setPalettePreview] = useState<{ stops: [number, number, number][]; cycle: number } | null>(null);
+  const [showPaletteEditor, setShowPaletteEditor] = useState(false);
+  /** Version counter so custom-palette CRUD re-renders the selector. */
+  const [, setCustomPalettesVersion] = useState(0);
+
   const [intent, setIntent] = useState('');
   const [showScribe, setShowScribe] = useState(false);
   const [isAnimating, setIsAnimating] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   /** Shrine mode: chrome stripped, fractal + intent only. Tap/key exits. */
   const [shrine, setShrine] = useState(false);
+  /** Scrying descent: beacon-chosen target, endless slow zoom. */
+  const [scrying, setScrying] = useState(false);
+  /** RAF-loop mirror: the render loop is memoized on [effectiveAnimating],
+   *  so it must never read live state — a stale closure here silently
+   *  disabled the entire descent once (loop kept `scrying === false`). */
+  const scryingRef = useRef(false);
+  useEffect(() => { scryingRef.current = scrying; }, [scrying]);
+  const [scryInfo, setScryInfo] = useState<{ depth: string; source: 'BEACON' | 'CSPRNG' } | null>(null);
+  // ------- Ritual Film -------
+  const [filming, setFilming] = useState(false);
+  const [filmMode, setFilmMode] = useState<'dive' | 'morph'>('dive');
+  const [filmLeft, setFilmLeft] = useState(0);
+  const filmRef = useRef<FilmSession | null>(null);
+  const filmLastTickRef = useRef(0);
+  const filmStartRef = useRef({ center: [0, 0] as [number, number], zoom: 3.5, juliaC: [0, 0] as [number, number] });
+  const FILM_SECONDS = 12;
+  /**
+   * Live flight state — the film owns center/zoom (dive) or juliaC (morph)
+   * while active, exactly like the scrying descent. Motion rides the render
+   * loop; the user's saved state is never mutated, and the view snaps back
+   * when the reel ends.
+   */
+  const filmFlightRef = useRef<{
+    mode: 'dive' | 'morph';
+    elapsed: number;
+  } | null>(null);
+  /**
+   * Live descent state. The descent owns center/zoom while active;
+   * `startTime` freezes while motion is paused so freeze/resume is clean.
+   */
+  const scryRef = useRef<{
+    target: [number, number];
+    startCenter: [number, number];
+    startZoom: number;
+    elapsed: number;
+    source: 'BEACON' | 'CSPRNG';
+    /** Pre-fetched entropy for the next cycle, so restarts are instant. */
+    nextHex: string | null;
+  } | null>(null);
   const [shrineHintVisible, setShrineHintVisible] = useState(false);
   const shrineHintTimer = useRef<number | null>(null);
 
@@ -120,9 +239,27 @@ const App: React.FC = () => {
     stateRef.current = state;
   }, [state]);
 
-  const lastFrameRef = useRef<number>(Date.now());
+  /** Preview override mirrored into a ref so the RAF loop sees it fresh. */
+  const palettePreviewRef = useRef(palettePreview);
+  useEffect(() => {
+    palettePreviewRef.current = palettePreview;
+  }, [palettePreview]);
 
-  const update = useCallback(() => {
+  // ------- Progressive refinement -------
+  // While the user is interacting (pan/zoom/sliders/any state change) the
+  // fractal renders at quarter resolution; after a short idle the render
+  // returns to full resolution. Cheap on the GPU, decisive on deep zooms.
+  const lastStateChangeRef = useRef(Date.now());
+  useEffect(() => {
+    lastStateChangeRef.current = Date.now();
+  }, [state]);
+  /** Idle time after which a coarse render refines to full resolution. */
+  const REFINE_DELAY_MS = 350;
+
+  const lastFrameRef = useRef<number>(Date.now());
+  const lastScryInfoRef = useRef<number>(0);
+
+  const update = useCallback(async () => {
     const now = Date.now();
     const dt = Math.min(0.1, (now - lastFrameRef.current) / 1000);
     lastFrameRef.current = now;
@@ -139,18 +276,132 @@ const App: React.FC = () => {
       const bands = reactive.snapshot();
       const s = stateRef.current;
       const pulse = bands.transient;
+      // Coarse while the view is in motion or controls are being dragged;
+      // refine to full resolution once everything has been idle a moment.
+      const idle = now - lastStateChangeRef.current;
+      const coarse = idle < REFINE_DELAY_MS;
+
+      // ------- Scrying descent -------
+      // The descent owns center/zoom: glide onto the beacon-chosen target,
+      // then halve zoom (visible height) every ~12s until float32 precision
+      // collapses, at which point it restarts on a fresh pre-fetched point.
+      let center = s.center;
+      let zoom = s.zoom;
+      const scry = scryingRef.current ? scryRef.current : null;
+      if (scrying && scry) {
+        if (effectiveAnimating) scry.elapsed += dt;
+        const t = Math.min(1, scry.elapsed / SCRY_FLYIN_SECONDS);
+        // smoothstep the fly-in so the approach eases onto the target
+        const f = t * t * (3 - 2 * t);
+        center = [
+          scry.startCenter[0] + (scry.target[0] - scry.startCenter[0]) * f,
+          scry.startCenter[1] + (scry.target[1] - scry.startCenter[1]) * f,
+        ];
+        // zoom is the visible height in plane units, so the descent halves it.
+        zoom = scry.startZoom * Math.pow(2, -scry.elapsed / SCRY_DOUBLE_SECONDS);
+
+        if (zoom < SCRY_FLOOR && scry.nextHex) {
+          // Precision exhausted — restart the descent on the next point.
+          const { hex, source } = await drawEntropy();
+          scryRef.current = {
+            target: targetFromHex(scry.nextHex),
+            startCenter: center,
+            startZoom: SCRY_FLOOR * 8, // back up a few doublings for a fresh view
+            elapsed: 0,
+            source,
+            nextHex: hex,
+          };
+          scry.elapsed = 0; // continue with the fresh cycle this frame
+          center = scryRef.current.startCenter;
+          zoom = scryRef.current.startZoom;
+        }
+
+        // Depth readout, throttled to ~4 updates/second.
+        if (now - lastScryInfoRef.current > 250) {
+          lastScryInfoRef.current = now;
+          setScryInfo({
+            depth: zoom.toExponential(2),
+            source: scryRef.current?.source ?? 'CSPRNG',
+          });
+        }
+      }
+
+      // ------- Ritual Film flight -------
+      // While a reel is rolling, the film owns the view: a smoothstep dive
+      // of six decades for c-space families (ending far below the float32
+      // wall, deep in perturbation territory). The user's state is untouched
+      // and the view snaps back when the reel ends.
+      const flight = filmFlightRef.current;
+      if (flight) {
+        if (effectiveAnimating) flight.elapsed += dt;
+        if (flight.elapsed >= FILM_SECONDS) {
+          // Reel complete — finalize the recording (async, fire-and-forget).
+          const session = filmRef.current;
+          filmRef.current = null;
+          filmFlightRef.current = null;
+          setFilming(false);
+          void session?.stop();
+        } else if (flight.mode === 'dive') {
+          const t = Math.min(1, flight.elapsed / FILM_SECONDS);
+          const e = t * t * (3 - 2 * t);
+          zoom = filmStartRef.current.zoom * Math.pow(1e-6, e);
+        }
+        // Countdown readout, throttled to ~4/sec.
+        if (now - filmLastTickRef.current > 250) {
+          filmLastTickRef.current = now;
+          setFilmLeft(Math.max(0, Math.ceil(FILM_SECONDS - flight.elapsed)));
+        }
+      }
+
+      // Julia morph: when active, the seed c rides its path around the
+      // base, so the set shapeshifts every frame (Julia family only).
+      const juliaC = s.type === 1 && s.juliaMorph !== 'off'
+        ? morphJuliaC(s.juliaC, s.juliaMorph, s.morphRadius, s.morphSpeed, currentTime)
+        : s.juliaC;
+      // Film morph mode: the seed traces one full lissajous figure per reel
+      // around the saved base — the Echo shapeshifting for the camera.
+      let juliaCOut = juliaC;
+      if (flight && flight.mode === 'morph' && s.type === 1) {
+        juliaCOut = morphJuliaC(filmStartRef.current.juliaC, 'lissajous', 0.15, 0.5, flight.elapsed);
+      }
+
+      // Buddhabrot ghost: a chunk of orbit-light accumulates every frame
+      // (the shrine sits longest → the god-form deepens). Uploads are
+      // throttled to ~4/sec so we don't re-upload 300KB per frame.
+      const bbActive = !!bbAccumRef.current;
+      if (bbActive) {
+        const acc = bbAccumRef.current!;
+        acc.step(BB_STEP_BUDGET, s.maxIterations);
+        const nowUp = Date.now();
+        if (acc.dirty && nowUp - bbLastUploadRef.current > 250) {
+          bbLastUploadRef.current = nowUp;
+          rendererRef.current?.setBuddhabrotData(acc.prepareView(), acc.width, acc.height);
+          acc.dirty = false;
+        }
+        // Orbit-count readout, throttled to ~4/sec.
+        if (nowUp - bbStatsRef.current > 250) {
+          bbStatsRef.current = nowUp;
+          setBbStats({ orbits: acc.orbitsPlotted });
+        }
+      }
+
       rendererRef.current.render({
         ...s,
         time: currentTime,
         chaosFactor: s.chaosFactor + bands.level * 0.9,
         // Transient zoom-punch: each onset breathes the view inward slightly.
-        zoom: s.zoom * (1 - pulse * 0.05),
+        zoom: zoom * (1 - pulse * 0.05),
+        center,
+        juliaC: juliaCOut,
+        paletteKey: s.paletteKey,
+        paletteShift: s.paletteShift,
+        paletteOverride: palettePreviewRef.current ?? undefined,
         effects: {
           ...s.effects,
           warp: Math.min(1, s.effects.warp + bands.bass * 0.45 + pulse * 0.25),
           strobe: Math.min(1, s.effects.strobe + bands.high * 0.5 + pulse * 0.3),
         },
-      });
+      }, { coarse });
     }
 
     animationRef.current = requestAnimationFrame(update);
@@ -200,6 +451,15 @@ const App: React.FC = () => {
           },
         }));
         setBreathPattern(phase.breath);
+        // Fractal choreography: phases may drive the Julia morph.
+        if (phase.juliaMorph !== undefined || phase.morphRadius !== undefined || phase.morphSpeed !== undefined) {
+          setState(prev => ({
+            ...prev,
+            ...(phase.juliaMorph !== undefined ? { juliaMorph: phase.juliaMorph } : {}),
+            ...(phase.morphRadius !== undefined ? { morphRadius: phase.morphRadius } : {}),
+            ...(phase.morphSpeed !== undefined ? { morphSpeed: phase.morphSpeed } : {}),
+          }));
+        }
 
         const engine = getBinauralEngine();
         if (phase.audio.kind === 'binaural' && phase.audio.preset) {
@@ -262,7 +522,7 @@ const App: React.FC = () => {
       zoom: 0.5 + h3 * 4.0,
       juliaC: [-0.8 + h2 * 1.6, -0.8 + h1 * 1.6],
       chaosFactor: h3,
-      type: Math.abs(hash) % 7 // Randomize over more types
+      type: Math.abs(hash) % (MAX_FRACTAL_ID + 1) // Randomize over all families
     }));
   };
 
@@ -322,6 +582,19 @@ const App: React.FC = () => {
       jx: p(s.juliaC[0]),
       jy: p(s.juliaC[1]),
       ch: p(s.chaosFactor),
+      tr: String(s.trap),
+      ts: s.trapSize.toFixed(2),
+      jm: s.juliaMorph,
+      mr: s.morphRadius.toFixed(3),
+      ms: s.morphSpeed.toFixed(3),
+      bb: s.buddhabrot ? '1' : '0',
+      p: s.paletteKey,
+      pl: s.paletteShift.toFixed(3),
+      // Shared custom palettes ride the link as compact hex stops so any
+      // machine can render the exact gradient without the save.
+      ...(getPalette(s.paletteKey).custom
+        ? { pd: getPalette(s.paletteKey).stops.map(stopHexCompact).join('') + '|' + getPalette(s.paletteKey).cycle }
+        : {}),
       e: s.effects.strobe.toFixed(1) + ',' + s.effects.psych.toFixed(1) + ',' + s.effects.warp.toFixed(1) + ',' + s.effects.scanlines.toFixed(1) + ',' + s.effects.rgbShift.toFixed(1) + ',' + s.effects.neon.toFixed(1) + ',' + s.effects.emboss.toFixed(1) + ',' + s.effects.crush.toFixed(1) + ',' + s.effects.glitch.toFixed(1) + ',' + s.effects.vignette.toFixed(1),
       v: '1',
     });
@@ -330,6 +603,34 @@ const App: React.FC = () => {
 
   const [isDragging, setIsDragging] = useState(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
+
+  // ------- Buddhabrot ghost -------
+  const enableBuddhabrot = useCallback(async () => {
+    if (bbAccumRef.current) return;
+    const { hex } = await drawEntropy(); // seeded by the Quantum Seed stream
+    const acc = createBuddhabrot(hex);
+    acc.prepareView(); // seed an empty field so the first render is black
+    bbAccumRef.current = acc;
+    bbLastUploadRef.current = Date.now();
+    rendererRef.current?.setBuddhabrotData(acc.view, acc.width, acc.height);
+    setBbStats({ orbits: 0 });
+    setState(prev => ({ ...prev, buddhabrot: true }));
+  }, []);
+
+  const disableBuddhabrot = useCallback(() => {
+    bbAccumRef.current = null;
+    rendererRef.current?.setBuddhabrotData(null, 0, 0);
+    setBbStats(null);
+    setState(prev => ({ ...prev, buddhabrot: false }));
+  }, []);
+
+  const clearGhost = useCallback(() => {
+    const acc = bbAccumRef.current;
+    if (!acc) return;
+    acc.reset();
+    rendererRef.current?.setBuddhabrotData(acc.view, acc.width, acc.height);
+    setBbStats({ orbits: 0 });
+  }, []);
 
   const deserializeState = useCallback((str: string): Partial<RendererState> | null => {
     try {
@@ -352,13 +653,38 @@ const App: React.FC = () => {
       } as RendererState['effects'];
       const zoom = num('z');
       if (zoom <= 0) throw new Error('bad zoom');
+
+      // A shared custom palette arrives as 30 hex chars + cycle (pd=).
+      // Materialize it locally (idempotent) so the selector can address it.
+      let paletteKey = PALETTES.some(pl => pl.key === q.get('p')) ? q.get('p')! : DEFAULT_PALETTE_KEY;
+      const pd = q.get('pd');
+      if (pd && /^[0-9a-f]{30}\|[0-9.]+$/i.test(pd)) {
+        const hexes = [];
+        for (let i = 0; i < 5; i++) hexes.push('#' + pd.slice(i * 6, i * 6 + 6));
+        const cycle = parseFloat(pd.split('|')[1]) || 2.5;
+        const draft: CustomPaletteDraft = { name: 'Shared Gradient', stops: hexes, cycle };
+        const pal = customToPalette(draft, 'shared_' + pd.split('|')[0]);
+        if (!paletteExists(pal.key)) upsertCustomPalette(pal);
+        paletteKey = pal.key;
+      }
+
       return {
-        type: Math.max(0, Math.min(6, Math.round(num('t')))),
+        type: Math.max(0, Math.min(MAX_FRACTAL_ID, Math.round(num('t')))),
         center: [num('cx'), num('cy')],
         zoom,
         maxIterations: Math.max(50, Math.min(500, Math.round(num('i')))),
         juliaC: [num('jx'), num('jy')],
         chaosFactor: num('ch'),
+        paletteKey,
+        paletteShift: q.get('pl') ? Math.max(0, Math.min(1, parseFloat(q.get('pl')!) || 0)) : 0,
+        trap: q.get('tr') ? Math.max(0, Math.min(5, Math.round(parseFloat(q.get('tr')!) || 0))) : 0,
+        trapSize: q.get('ts') ? Math.max(0.05, Math.min(3, parseFloat(q.get('ts')!) || 0.5)) : 0.5,
+        juliaMorph: (['off', 'orbit', 'lissajous', 'drift'].includes(q.get('jm') || '')
+          ? q.get('jm') as JuliaMorphMode
+          : 'off'),
+        morphRadius: q.get('mr') ? Math.max(0.01, Math.min(0.5, parseFloat(q.get('mr')!) || 0.15)) : 0.15,
+        morphSpeed: q.get('ms') ? Math.max(0.01, Math.min(0.5, parseFloat(q.get('ms')!) || 0.12)) : 0.12,
+        buddhabrot: q.get('bb') === '1',
         effects: eff,
       };
     } catch {
@@ -457,6 +783,8 @@ const App: React.FC = () => {
     const restored = deserializeState(window.location.search.substring(1));
     if (restored) {
       setState(prev => ({ ...prev, ...restored }));
+      // A shared ghost rides the link: materialize a fresh accumulator.
+      if (restored.buddhabrot) enableBuddhabrot();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -500,14 +828,20 @@ const App: React.FC = () => {
       src.onended = () => ctx.close();
     } catch {
       // Silent banish if audio is unavailable
+    }      window.dispatchEvent(new CustomEvent('chaos-banish'));
+    stopScrying();
+    // A banished rite leaves no film: abandon any rolling reel.
+    if (filmRef.current) {
+      filmRef.current.abort();
+      filmRef.current = null;
+      filmFlightRef.current = null;
+      setFilming(false);
     }
-
-    window.dispatchEvent(new CustomEvent('chaos-banish'));
     setOverlay(prev => ({ ...prev, url: null }));
     setState({
       center: [-0.5, 0],
       zoom: 3.5,
-      maxIterations: 100,
+      maxIterations: defaultMaxIterations(),
       type: 0,
       juliaC: [-0.7, 0.27],
       time: 0,
@@ -517,18 +851,43 @@ const App: React.FC = () => {
       },
       accentColor: [1, 0, 0],
       chaosFactor: 0,
+      juliaMorph: 'off' as const,
+      morphRadius: 0.15,
+      morphSpeed: 0.12,
+      paletteKey: DEFAULT_PALETTE_KEY,
+      paletteShift: 0,
+      trap: 0,
+      trapSize: 0.5,
+      buddhabrot: false,
     });
+    // Banish also exorcises the ghost: stop accumulating, clear the field.
+    disableBuddhabrot();
     setIsAnimating(true);
     startTimeRef.current = Date.now();
     setTimeout(() => setIsBanishing(false), 1400);
   }, [isBanishing]);
 
+  /** Zoom keeping the plane point under the cursor pinned to the cursor —
+   *  full tactile navigation into deep zooms (paired with the ds shader). */
   const handleWheel = (e: React.WheelEvent) => {
     const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-    setState(prev => ({
-      ...prev,
-      zoom: prev.zoom * zoomFactor
-    }));
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    setState(prev => {
+      const aspect = (canvas.width || 800) / (canvas.height || 600);
+      // Cursor in uv space (0..1, y down like the shader's uv).
+      const u = (e.clientX - rect.left) / rect.width;
+      const v = (e.clientY - rect.top) / rect.height;
+      // Plane point currently under the cursor.
+      const px = prev.center[0] + (u - 0.5) * aspect * prev.zoom;
+      const py = prev.center[1] + (0.5 - v) * prev.zoom;
+      // New zoom, then re-center so that point stays under the cursor.
+      const zoom = prev.zoom * zoomFactor;
+      const cx = px - (u - 0.5) * aspect * zoom;
+      const cy = py + (v - 0.5) * zoom;
+      return { ...prev, zoom, center: [cx, cy] };
+    });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -594,16 +953,30 @@ const App: React.FC = () => {
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
+      // Pinch to the midpoint: the plane point between the fingers stays
+      // between them while the view scales — tactile deep-zoom navigation.
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
       if (lastTouchDist.current !== null) {
         const delta = lastTouchDist.current / dist;
         // Sensitivity control
         const zoomChange = Math.pow(delta, 0.5);
 
-        setState(prev => ({
-          ...prev,
-          zoom: prev.zoom * zoomChange
-        }));
+        setState(prev => {
+          const canvas = canvasRef.current;
+          if (!canvas) return { ...prev, zoom: prev.zoom * zoomChange };
+          const rect = canvas.getBoundingClientRect();
+          const aspect = (canvas.width || 800) / (canvas.height || 600);
+          const u = (midX - rect.left) / rect.width;
+          const v = (midY - rect.top) / rect.height;
+          const px = prev.center[0] + (u - 0.5) * aspect * prev.zoom;
+          const py = prev.center[1] + (0.5 - v) * prev.zoom;
+          const zoom = prev.zoom * zoomChange;
+          const cx = px - (u - 0.5) * aspect * zoom;
+          const cy = py + (v - 0.5) * zoom;
+          return { ...prev, zoom, center: [cx, cy] };
+        });
       }
       lastTouchDist.current = dist;
     }
@@ -618,6 +991,99 @@ const App: React.FC = () => {
   // viewport (no 50vh split, no dead void), and the oracle bar hides too.
   const seqImmersive = seqSidebarHidden;
   const collapsed = !sidebarOpen || seqImmersive;
+
+  // ------- Scrying descent -------
+  // A beacon-chosen point on the set's boundary; the engine descends into
+  // it forever, restarting on a fresh random point when float32 precision
+  // runs out. Every working is unrepeatable and verifiably random.
+
+  /** gcd — coprime numerator guard for the bulb rotation number. */
+  const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+
+  /**
+   * Derives a deep-zoom target from beacon entropy. The main cardioid's
+   * boundary is c(θ) = ½e^iθ − ¼e^2iθ; choosing a rational angle θ = 2π·n/d
+   * with coprime n/d lands exactly on the cusp where the period-d bulb
+   * attaches — a point of guaranteed infinite fractal structure.
+   */
+  const targetFromHex = useCallback((hex: string): [number, number] => {
+    const n1 = parseInt(hex.slice(0, 8), 16);
+    const n2 = parseInt(hex.slice(8, 16), 16);
+    // Denominator 2..40, coprime numerator in 1..d-1.
+    const d = 2 + (n1 % 39);
+    let n = (n2 % (d - 1)) + 1;
+    let guard = 0;
+    while (gcd(n, d) !== 1 && guard++ < 64) n = ((n + 1) % (d - 1)) + 1;
+    const th = (2 * Math.PI * n) / d;
+    const cRe = 0.5 * Math.cos(th) - 0.25 * Math.cos(2 * th);
+    const cIm = 0.5 * Math.sin(th) - 0.25 * Math.sin(2 * th);
+    return [cRe, cIm];
+  }, [gcd]);
+
+  /** Precision floor: below this, even perturbation rendering loses the
+   *  plot. The PT path (double reference orbit + f32 deltas) was measured
+   *  pixel-exact against double-precision truth at zoom 3.5e-8, 1e-10 and
+   *  1e-12 (mean color error 0.16/255), so the descent now runs twelve
+   *  orders deep — the old float32 wall was 1e-4. */
+  const SCRY_FLOOR = 1e-12;
+  /** Zoom doubling period in seconds — a slow, deliberate descent. */
+  const SCRY_DOUBLE_SECONDS = 12;
+  /** Seconds to glide from the current view onto the target. */
+  const SCRY_FLYIN_SECONDS = 8;
+
+  const startScrying = useCallback(async () => {
+    const { hex, source } = await drawEntropy();
+    // Pre-fetch the next cycle's entropy now so restarts are instant.
+    const nxt = await drawEntropy();
+    scryRef.current = {
+      target: targetFromHex(hex),
+      startCenter: [stateRef.current.center[0], stateRef.current.center[1]],
+      startZoom: stateRef.current.zoom,
+      elapsed: 0,
+      source,
+      nextHex: nxt.hex,
+    };
+    setScrying(true);
+    setIsAnimating(true);
+    setScryInfo({ depth: stateRef.current.zoom.toExponential(2), source });
+  }, [targetFromHex]);
+
+  const stopScrying = useCallback(() => {
+    setScrying(false);
+    scryRef.current = null;
+    setScryInfo(null);
+  }, []);
+
+  // ------- Ritual Film -------
+  const startRitualFilm = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || filming) return;
+    const session = startFilm(canvas, 60);
+    if (!session) {
+      console.warn('Ritual Film: MediaRecorder unavailable');
+      return;
+    }
+    const s = stateRef.current;
+    const mode: 'dive' | 'morph' = s.type === 1 ? 'morph' : 'dive';
+    filmRef.current = session;
+    filmStartRef.current = {
+      center: [s.center[0], s.center[1]],
+      zoom: s.zoom,
+      juliaC: [s.juliaC[0], s.juliaC[1]],
+    };
+    filmFlightRef.current = { mode, elapsed: 0 };
+    setFilmMode(mode);
+    setFilming(true);
+    setIsAnimating(true); // the flight needs a live clock
+  }, [filming]);
+
+  const stopRitualFilm = useCallback(() => {
+    const session = filmRef.current;
+    filmRef.current = null;
+    filmFlightRef.current = null;
+    setFilming(false);
+    void session?.stop();
+  }, []);
 
   const enterShrine = useCallback(() => {
     setShrine(true);
@@ -677,10 +1143,110 @@ const App: React.FC = () => {
         </div>
 
         <div className="control-group">
-          <div style={{ marginTop: '10px', fontSize: '0.9em' }}>
+          <div className="slider-group" style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '0.9em' }}>Fractal Family</label>
+            <select
+              value={state.type}
+              onChange={(e) => {
+                const id = parseInt(e.target.value);
+                setState(prev => ({
+                  ...prev,
+                  type: id,
+                  // Newton's basins want a centered view: the screen point
+                  // is the initial guess, not a plane offset.
+                  ...(id === 8 ? { center: [0, 0] as [number, number], zoom: 3.0 } : {}),
+                }));
+              }}
+            >
+              {FRACTAL_TYPES.map(f => <option key={f.id} value={f.id}>{f.ritualName}</option>)}
+            </select>
+          </div>
+          <div style={{ marginTop: '4px', fontSize: '0.85em' }}>
             Fractal Type: <span style={{ color: '#ff4444', fontWeight: 'bold' }}>
-              {['Mandelbrot', 'Julia', 'Burning Ship', 'Tricorn', 'Celtic', 'Buffalo', 'Perpendicular'][state.type]}
+              {fractalName(state.type)}
             </span>
+          </div>
+          <div className="slider-group" style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '0.9em' }}>Orbit Trap</label>
+            <select
+              value={state.trap}
+              onChange={(e) => setState(prev => ({ ...prev, trap: parseInt(e.target.value) }))}
+              aria-label="Orbit trap shape"
+            >
+              <option value={0}>Off</option>
+              <option value={1}>Circle</option>
+              <option value={2}>Cross</option>
+              <option value={3}>Line</option>
+              <option value={4}>Diamond</option>
+              <option value={5}>Flower</option>
+            </select>
+            {state.trap !== 0 && (
+              <input
+                type="range"
+                min="0.1"
+                max="2"
+                step="0.05"
+                value={state.trapSize}
+                onChange={(e) => setState(prev => ({ ...prev, trapSize: parseFloat(e.target.value) }))}
+                aria-label="Orbit trap size"
+              />
+            )}
+          </div>
+          {state.type === 1 && (
+            <div className="slider-group" style={{ marginTop: '10px' }}>
+              <label style={{ fontSize: '0.9em' }}>Julia Morph</label>
+              <select
+                value={state.juliaMorph}
+                onChange={(e) => setState(prev => ({ ...prev, juliaMorph: e.target.value as JuliaMorphMode }))}
+                aria-label="Julia morph mode"
+              >
+                <option value="off">Off</option>
+                <option value="orbit">Orbit</option>
+                <option value="lissajous">Lissajous</option>
+                <option value="drift">Drift</option>
+              </select>
+              {state.juliaMorph !== 'off' && (
+                <>
+                  <input
+                    type="range"
+                    min="0.02"
+                    max="0.4"
+                    step="0.01"
+                    value={state.morphRadius}
+                    onChange={(e) => setState(prev => ({ ...prev, morphRadius: parseFloat(e.target.value) }))}
+                    aria-label="Morph radius"
+                  />
+                  <input
+                    type="range"
+                    min="0.02"
+                    max="0.5"
+                    step="0.01"
+                    value={state.morphSpeed}
+                    onChange={(e) => setState(prev => ({ ...prev, morphSpeed: parseFloat(e.target.value) }))}
+                    aria-label="Morph speed"
+                  />
+                </>
+              )}
+            </div>
+          )}
+          <div className="slider-group" style={{ marginTop: '10px' }}>
+            <label style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!bbAccumRef.current}
+                onChange={() => (bbAccumRef.current ? disableBuddhabrot() : enableBuddhabrot())}
+                aria-label="Buddhabrot ghost"
+              />
+              Buddhabrot Ghost
+            </label>
+            {bbAccumRef.current && (
+              <div style={{ marginTop: '4px', fontSize: '0.78em', color: '#ff9a9a' }}>
+                {bbStats ? `${bbStats.orbits.toLocaleString()} orbits · the ghost deepens` : 'summoning…'}
+                <button className="mini secondary" onClick={clearGhost} style={{ marginLeft: '8px' }}>
+                  Clear Ghost
+                </button>
+              </div>
+            )}
           </div>
           <div className="slider-group" style={{ marginTop: '15px' }}>
             <label style={{ fontSize: '0.9em' }}>Fractal Resolution: {state.maxIterations}</label>
@@ -692,6 +1258,45 @@ const App: React.FC = () => {
               value={state.maxIterations}
               onChange={(e) => setState(prev => ({ ...prev, maxIterations: parseInt(e.target.value) }))}
               style={{ width: '100%', accentColor: '#ff4444' }}
+            />
+          </div>
+          <div className="slider-group" style={{ marginTop: '15px' }}>
+            <label style={{ fontSize: '0.9em' }}>Escape Gradient</label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <select
+                value={state.paletteKey}
+                onChange={(e) => setState(prev => ({ ...prev, paletteKey: e.target.value }))}
+                style={{ flex: 1, minWidth: 0 }}
+              >
+                <optgroup label="Gradients">
+                  {PALETTES.filter(pl => !pl.group).map(pl => <option key={pl.key} value={pl.key}>{pl.name}</option>)}
+                </optgroup>
+                <optgroup label="Planetary">
+                  {PALETTES.filter(pl => pl.group === 'planetary').map(pl => <option key={pl.key} value={pl.key}>{pl.name}</option>)}
+                </optgroup>
+                {listCustomPalettes().length > 0 && (
+                  <optgroup label="Your Gradients">
+                    {listCustomPalettes().map(pl => <option key={pl.key} value={pl.key}>{pl.name}</option>)}
+                  </optgroup>
+                )}
+              </select>
+              <button
+                className="secondary"
+                style={{ padding: '4px 8px' }}
+                title="Forge a custom gradient"
+                aria-label="Open palette editor"
+                onClick={() => setShowPaletteEditor(v => !v)}
+              >✎</button>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={state.paletteShift}
+              onChange={(e) => setState(prev => ({ ...prev, paletteShift: parseFloat(e.target.value) }))}
+              style={{ width: '100%', accentColor: '#ff4444' }}
+              aria-label="Palette rotation"
             />
           </div>
         </div>
@@ -813,6 +1418,18 @@ const App: React.FC = () => {
             {isAnimating ? 'Freeze Motion' : 'Resume Flow'}
           </button>
           <button className="secondary" onClick={saveFractal}>Save Fractal</button>
+          <button
+            className="secondary"
+            onClick={() => (filming ? stopRitualFilm() : startRitualFilm())}
+            disabled={isBanishing}
+            title={filmSupported()
+              ? (state.type === 1
+                ? 'Film a 12s Lissajous morph of the Echo (WebM/MP4)'
+                : 'Film a 12s zoom dive into the set (WebM/MP4)')
+              : 'Video recording not supported in this browser'}
+          >
+            {filming ? '■ Stop Film' : 'Ritual Film'}
+          </button>
           <button className="secondary" onClick={() => {
             const qs = serializeState(stateRef.current);
             const url = `${window.location.origin}${window.location.pathname}?${qs}`;
@@ -833,9 +1450,26 @@ const App: React.FC = () => {
             Copy Ritual Link
           </button>
           <button className="secondary" onClick={enterShrine}>Shrine Mode</button>
+          <button
+            className="secondary"
+            onClick={() => (scrying ? stopScrying() : startScrying())}
+            disabled={isBanishing}
+          >
+            {scrying ? 'Ascend' : 'Scrying Descent'}
+          </button>
           <button className="banish-button" onClick={() => setShowBanishConfirm(true)} disabled={isBanishing}>
             {isBanishing ? 'BANISHING...' : 'BANISH'}
           </button>
+          {scrying && scryInfo && (
+            <div style={{ fontSize: '0.75rem', color: '#ff6666', fontFamily: 'var(--font-mono)' }}>
+              DESCENDING · depth {scryInfo.depth} · {scryInfo.source === 'BEACON' ? '◈ beacon' : 'CSPRNG'}
+            </div>
+          )}
+          {filming && (
+            <div style={{ fontSize: '0.75rem', color: '#ff6666', fontFamily: 'var(--font-mono)', animation: 'decay-pulse 1.4s ease-in-out infinite' }}>
+              ● ROLLING · {filmMode === 'morph' ? 'lissajous morph' : 'zoom dive'} · {filmLeft}s left
+            </div>
+          )}
         </div>
 
         <div className="section-title">Ritual Sequencer</div>
@@ -945,6 +1579,24 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showPaletteEditor && (
+        <PaletteEditor
+          onClose={() => { setShowPaletteEditor(false); setPalettePreview(null); }}
+          onPreview={(o) => setPalettePreview(o)}
+          onSaved={(key) => {
+            setCustomPalettesVersion(v => v + 1);
+            setPalettePreview(null);
+            setState(prev => ({ ...prev, paletteKey: key }));
+          }}
+          onDeleted={(key) => {
+            setCustomPalettesVersion(v => v + 1);
+            setState(prev => (prev.paletteKey === key
+              ? { ...prev, paletteKey: DEFAULT_PALETTE_KEY }
+              : prev));
+          }}
+        />
       )}
 
       {showDrawer && (

@@ -1,11 +1,13 @@
 /**
  * The Grimoire — local persistence for the practitioner's records.
  *
- * Four record types:
+ * Five record types:
  *  - Sigil:    a saved fractal ritual space (intent + renderer state + metadata)
  *  - Diary:    a ritual diary entry with a manifestation follow-up outcome
  *  - Servitor: a created entity with a home world (fractal state) and duties
  *  - Reading:  a divination draw (question + full draw + verified outcome)
+ *  - Location: a named place in the spirit worlds (a saved view) — the map
+ *              of territory a practitioner revisits or shares
  *
  * Records live in localStorage under a single namespaced key. JSON export/
  * import moves the whole grimoire between machines; File System Access
@@ -79,6 +81,19 @@ export interface ServitorRecord {
     /** Lifespan and feeding schedule (free text, per the classical recipe). */
     lifespan: string;
     feeding: string;
+    /** Timestamp of the last feeding — neglected servitors' worlds decay. */
+    lastFed?: number | null;
+}
+
+/** A named place in the spirit worlds: a saved view one can revisit or share. */
+export interface LocationRecord {
+    kind: 'location';
+    id: string;
+    createdAt: number;
+    name: string;
+    /** The exact URL query string for this place, ready to restore. */
+    ritualLink: string;
+    state: FractalSnapshot;
 }
 
 /** Fields the Servitor wizard fills beyond the base record. */
@@ -115,7 +130,7 @@ export interface ReadingRecord {
     diaryId: string | null;
 }
 
-export type GrimoireRecord = SigilRecord | DiaryRecord | ServitorRecord | ReadingRecord | CustomSequenceRecord;
+export type GrimoireRecord = SigilRecord | DiaryRecord | ServitorRecord | ReadingRecord | CustomSequenceRecord | LocationRecord;
 
 /** A practitioner-authored ritual sequence, launched from the sequencer. */
 export interface CustomSequenceRecord {
@@ -238,6 +253,60 @@ export function newId(): string {
     const bytes = new Uint8Array(6);
     crypto.getRandomValues(bytes);
     return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ------- Decay (neglected places drift into chaos) -------
+
+/**
+ * Places are remembered by the substrate, but nothing tends them. Days of
+ * neglect push a world through four decay stages; the previews in the
+ * Places tab seep red and reality tears in horizontal bands accordingly.
+ * This is presentation-only — the stored state is never touched, and a
+ * fed/visited world snaps back crisp.
+ */
+const DECAY_STAGES_DAYS = [3, 7, 14, 30];
+
+/** RefDays since `t`, clamped at 0. */
+function daysSince(t: number, now: number): number {
+    return Math.max(0, (now - t) / 86400000);
+}
+
+/**
+ * Decay level 0..4 for a place. Servitors: measured from the last feeding
+ * (falling back to creation once feeding has begun — a fed servitor never
+ * returns to pristine). Bare locations just settle with age, capped lower.
+ */
+export function decayLevel(rec: ServitorRecord | LocationRecord, now: number = Date.now()): number {
+    let days: number;
+    if (rec.kind === 'servitor') {
+        if (!rec.homeWorld) return 0;
+        days = rec.lastFed != null ? daysSince(rec.lastFed, now) : daysSince(rec.createdAt, now);
+        if (rec.lastFed != null) days = Math.max(days, 3); // once tended, never pristine again — it can always grow hungry
+    } else {
+        days = daysSince(rec.createdAt, now);
+    }
+    const cap = rec.kind === 'servitor' ? 4 : 2;
+    let level = 0;
+    for (const d of DECAY_STAGES_DAYS) { if (days >= d) level++; }
+    return Math.min(level, cap);
+}
+
+/** One-line description of what neglect has done to a place. */
+export function decayLabel(level: number, kind: 'servitor' | 'location'): string {
+    if (kind === 'servitor') {
+        return [
+            'world tended',
+            'edges fraying — it grows hungry',
+            'red seep in the deeps — feed it soon',
+            'reality tearing — the entity stirs, unfed',
+            'given to chaos — its form barely holds',
+        ][Math.min(level, 4)];
+    }
+    return [
+        'still',
+        'settling into the substrate',
+        'ancient — the substrate has grown over it',
+    ][Math.min(level, 2)];
 }
 
 // ------- JSON export / import -------

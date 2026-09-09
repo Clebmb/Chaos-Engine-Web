@@ -1,0 +1,66 @@
+# Changelog9926
+
+Every change made to **Sigil Scribe / Chaos Engine**, starting with the React95 UI conversion, in the order they were made.
+
+- Converted the entire UI theme to **React95-style UI elements** — dark red and black, mostly black with red outlines and text — reworking all components to the retro Windows 95 aesthetic (beveled borders, chunky controls, title bars).
+- Brightened the darker red text that was too hard to read against the black background.
+- Fixed the middle bar on mobile (donate button, source code button, quantum seed, oracle) covering part of the Sigil Scribe.
+- On mobile, stages that end up alone on one line (like stage 4) are now centered.
+- Added fullscreening of the fractal — along with the quantum seed and oracle — on mobile.
+- Added a collapsible sidebar on desktop.
+- Fixed the sidebar collapse arrow directions on desktop (right when uncollapsed, left when collapsed, after initially building them swapped); mobile arrows point up when uncollapsed and down when collapsed.
+- Changed the `https://clebmb.pages.dev` link to `https://caleb.website`.
+- Removed ".EXE" after "SIGIL SCRIBE".
+- Removed the weird red glitchy-looking artifacts that appeared next to the "X" (close) button when Sigil Scribe was open.
+- Expanded the Sigil Drawer with **visual options** to change the colors, effects, and look of the drawn sigil.
+- Made the final output when charging a sigil as an overlay use a **transparent background**, on by default, with the option to turn it off and pick a custom background color.
+- Renamed "Sigil Drawer" to "Sigil Workshop".
+- Added **The Grimoire** — local persistence for the practitioner's records: saved sigils (statement of intent, Julia coordinates, chaos factor, date, moon phase), a ritual diary with results follow-up ("did it manifest?"), and servitor records, with export/import as JSON and optional storage in a chosen folder via the File System Access API.
+- Removed the example entries from the "Sigils, Diary, Servitors" sections of the Grimoire.
+- Added the **ritual sequencer** — a phase engine (Banish → Intent → Gnosis → Charge → Banish) where each phase auto-configures the app: effect presets, audio mode, timers, and screen behavior.
+- Rebuilt the audio generator from a mono sine into real **binaural beats** — two oscillators panned hard L/R with a few-Hz offset — and added isochronic mode and Solfeggio presets.
+- Added a **breath pacer** — box breathing / 4-7-8 patterns drawn over the fractal for physiological gnosis.
+- Added **planetary hours + moon phase** to the Oracle bar — classical Chaldean timing tools.
+- Fixed "DVD Bounce" and "Random Flash" not working when exporting from the sigil workshop.
+- Added a little **paint brush icon** to the right of the source code button, opening a dropdown menu with themes.
+- Added 12+ unique themes with distinct UI treatments, persisted across sessions via localStorage.
+- Removed theme descriptions from the theme dropdown (names only).
+- Fixed buttons on the "Boing Ball" and "Bluewin 95" themes rendering completely black (black text on black button) — buttons are now grey like classic Windows 95.
+- The **Banish button** now brings up a confirmation screen — "ARE YOU SURE?" with Yes/No options; pressing YES completes the banishment and plays the sound.
+- Fixed the breathwork pacer endlessly restarting "Inhale" at 6 seconds.
+- Fixed the breathwork section during the ritual sequencer looking broken on mobile — it now automatically fullscreens and hides the toolbar.
+- Added an **abort button** during the breathing exercise.
+- Made breathwork a standalone ritual tool usable at any time, then removed the duplicate "ritual tools" entry since it already had its own dedicated section.
+- The ritual sequencer now offers **"Use Current Settings" / "Use Default Settings"** radio boxes, so it respects the user's already-configured visual options instead of always overwriting them.
+- Added the **divination suite** — four oracular systems all seeded by the Quantum Seed entropy stream (drand beacon with CSPRNG fallback): full 16-figure **geomancy** shield charts (Mothers → Daughters → Nieces → Witnesses → Judge, plus Requerant and Sentence), 24-elder Futhark **rune** draws (single / three-Norn spread), the 78-card Rider–Waite–Smith **tarot** deck with upright/reversed draws, and **I Ching** hexagram casting with trigram breakdown.
+- Added the **servitor creation wizard** — name, purpose, sigil, "housing" (fractal coordinates), lifespan, and feeding schedule, stored in the grimoire. Activating a servitor launches its world: its fractal, its tone, its overlay.
+- Added **The Listening Bone** — mic input → FFT → real-time fractal response: chant, drum, or breathe and the fractal's warp/strobe/zoom/chaos answer in real time.
+- Gave the Listening Bone the ability to **listen to the engine itself** — reacting to the music and frequencies playing within the Chaos Engine, not just the microphone.
+- Fixed the selected source option's text being invisible (red on red) — selected option text is now black.
+- Added **divination journaling** — any draw (question, spread, entropy provenance) can be saved to the grimoire, revisited later, and marked hit / miss / unclear, optionally linked to a diary entry.
+- Added **ritual card export** — one button renders a shareable PNG containing the sigil, statement of intent, moon phase, planetary hour, date, and seed hash, with the ability to save the card to the grimoire.
+- Added **custom ritual authoring (Ritual Forge)** — build your own sequences: add, reorder, and rename phases, and per phase pick effects, audio, breath pattern, timer, and immersion. Saved in the grimoire and launchable like the built-in liturgy.
+- Added **Shrine mode** — one keypress strips everything (top bar, sidebar, cursor) leaving only the slowly drifting fractal with audio, the statement of intent gently pulsing on screen; exits with any tap. Later removed the "nothing is true. everything is permitted." text from shrine mode.
+- Made the app an **installable PWA** — manifest + service worker so it lives on the phone's home screen and works offline.
+- Fixed the Ritual Forge opening inside the toolbar instead of full screen like the other windows (Sigil Workshop, Grimoire, etc.).
+- Stopped the desktop sidebar from scrolling left/right — vertical scrolling only.
+- Moved the scrollbars of the Sigil Workshop, Ritual Builder, and other windows that open to be aligned to the right edge instead of floating more centered.
+- Fixed "?" tooltips overflowing off the page — they now wrap to fit within the viewport.
+- Brought the Sigil Workshop to **full feature parity with the Sigilarium** project (without removing any existing Chaos Engine features), including GIF export of animated sigils.
+- Renamed the Sigil Workshop to **"The Sigilarium"**, made its button use the Sigilarium image, moved it to the top-most option under Ritual Tools, and removed the old Sigilarium image that linked to `https://sigilarium.pages.dev`.
+- Made the overlay system support **GIFs, including GIFs with transparency**, and made the Sigilarium's "Charge As Overlay" work when the sigil is animated — animated features now produce an animated transparent GIF overlay.
+- Fixed the animation-detection bug where the six numeric speed values made `hasActiveAnimation()` always true, sending every charge down the GIF path; only the six animation flags are checked now, so static charges produce crisp PNGs again.
+- Rebuilt the fractal engine from CPU Canvas 2D to **WebGL fragment shaders** — the whole viewport computed on the GPU every frame: 60fps at full resolution, real-time parameter morphing, deep zooms, and per-pixel effects (warp, RGB shift, psychedelic) done properly in the same shader instead of post-processing passes.
+- Added **smooth (continuous) coloring plus a palette system** — removing escape-time banding entirely — with cyclic gradient palettes, ritual presets (Saturn, Mars, Luna correspondences…), and a small palette editor.
+- Added **progressive refinement** — renders coarse while interacting, refines when idle, keeping deep zooms usable.
+- Added **more fractal families** — Burning Ship, Tricorn, Phoenix, Newton fractals (with basin coloring), and higher powers (z³, z⁴ "power towers"), each with a ritual name.
+- Added **orbit traps** — coloring by how close each orbit passes to a chosen shape (circle, cross, line), producing wing-like organic patterns no escape-time gradient can match.
+- Added the **beacon-seeded scrying descent** — the drand beacon picks a random deep point and the engine slowly descends into it forever, so every session visits a region of the set no one has ever seen, verifiably random. Later fixed the stale-closure bug that left the descent branch never executing in the RAF loop (the flag is now read through a ref).
+- Added **Julia morphing** — continuously animating the Julia seed `c` along a path (drift around a chosen Mandelbrot point, Lissajous orbit), so the set shapeshifts; available as a per-phase motion option in the ritual sequencer.
+- Added **Buddhabrot mode** — plotting the orbits of escaping points as accumulating light instead of the escape-time field, rendering the "ghost" of the set; it accumulates progressively, so in shrine mode the longer you sit, the more the god-form emerges from chaos.
+- Added **deep zoom via perturbation theory** — past float32's collapse (~1e-4 zoom), a double-precision reference orbit is computed on the CPU and per-pixel deltas iterate in the shader with Zhuoran rebasing; verified pixel-exact against double-precision truth down to zoom 1e-12 (~8 orders of magnitude deeper than before). Paired with zoom-to-cursor on wheel and pinch-to-midpoint on touch.
+- Changed the default fractal resolution to **250 iterations on desktop and 125 on mobile** (width ≤ 768px), applied at load and on Banish reset.
+- Added **Grimoire locations** — save a named place (coordinates, zoom, palette) to the grimoire as a location on a map of spirit-world territory, revisit it, or share it through ritual links. A new Places tab lists saved locations plus every servitor's home world as addresses on the map, each with a Travel button restoring the world.
+- Added **decay for locations and servitors** — neglected places visibly drift into chaos through deterministic stages (3/7/14/30 days untended): red seep bleeds into previews, horizontal reality-tear glitch bands shear the image, and stage labels narrate the rot ("edges fraying — it grows hungry" → "given to chaos — its form barely holds"). Servitors decay harder than bare places.
+- Added the **Feed mechanic** — feeding a servitor resets its decay clock, and a fed servitor never returns to pristine; bare locations only settle since nothing tends them.
+- Added the **Flight Recorder (Ritual Film)** — a Ritual Film button that records a 12-second fractal flight to WebM/MP4 via MediaRecorder (60fps, codec ladder: MP4/H.264 → WebM/VP9 → VP8), auto-named and downloaded; the camera zoom-dives six decades (enabled by the deep-zoom engine) or Lissajous-morphs the Julia seed when the Echo is active, with a live countdown, early-stop control, the view restored exactly after the reel, and Banish discarding the film entirely.

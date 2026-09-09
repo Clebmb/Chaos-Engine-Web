@@ -36,6 +36,10 @@ export interface AudioPhaseConfig {
 
 export type BreathPattern = 'off' | 'box' | '478' | 'resonance';
 
+/** Julia morph modes — the seed c animates along a path, so the set
+ *  shapeshifts. Only visible when the Julia family is active. */
+export type JuliaMorphMode = 'off' | 'orbit' | 'lissajous' | 'drift';
+
 export interface PhaseDefinition {
     key: RitualPhase;
     label: string;
@@ -49,6 +53,10 @@ export interface PhaseDefinition {
     hideSidebar: boolean;
     /** Freeze fractal time (stasis). */
     freezeMotion: boolean;
+    /** Optional Julia morph for the phase (fractal choreography). */
+    juliaMorph?: JuliaMorphMode;
+    morphRadius?: number;
+    morphSpeed?: number;
 }
 
 export interface SequencerPreset {
@@ -88,6 +96,8 @@ const STANDARD: SequencerPreset = {
             effects: { psych: 0.7, warp: 0.8, scanlines: 0.3, vignette: 0.8 },
             audio: { kind: 'binaural', preset: 'theta', mode: 'binaural', volume: 0.18 },
             breath: 'box', hideSidebar: true, freezeMotion: false,
+            // The set breathes in a figure-eight while you dissolve.
+            juliaMorph: 'lissajous', morphRadius: 0.18, morphSpeed: 0.1,
         },
         {
             key: 'charge', label: 'Charge', duration: 120,
@@ -95,6 +105,8 @@ const STANDARD: SequencerPreset = {
             effects: { strobe: 0.7, psych: 0.5, neon: 0.8, rgbShift: 0.8, vignette: 0.7 },
             audio: { kind: 'binaural', preset: 'gamma', mode: 'binaural', volume: 0.2 },
             breath: '478', hideSidebar: true, freezeMotion: false,
+            // Steady circular pour around the seed.
+            juliaMorph: 'orbit', morphRadius: 0.15, morphSpeed: 0.14,
         },
         {
             key: 'closing', label: 'Closing Banish', duration: 60,
@@ -130,6 +142,8 @@ const DEEP_TRANCE: SequencerPreset = {
             effects: { warp: 1.4, psych: 0.9, scanlines: 0.2, vignette: 0.9 },
             audio: { kind: 'binaural', preset: 'theta', mode: 'binaural', volume: 0.22 },
             breath: 'resonance', hideSidebar: true, freezeMotion: false,
+            // A slow, organic wandering while the field deepens.
+            juliaMorph: 'drift', morphRadius: 0.12, morphSpeed: 0.06,
         },
         {
             key: 'charge', label: 'Charge', duration: 180,
