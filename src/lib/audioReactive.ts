@@ -216,9 +216,27 @@ export class AudioReactiveEngine {
         try { node.connect(this.analyser); } catch { /* already connected */ }
     }
 
+    /** Retry hook for the deferred media capture (see connectInternalMedia). */
+    private onCtxState = (): void => {
+        if (this.ctx?.state === 'running') {
+            this.connectInternalMedia();
+        } else {
+            this.ctx?.addEventListener('statechange', this.onCtxState, { once: true });
+        }
+    };
+
     /** (Re)connects the registered music element into ctx → analyser + out. */
     private connectInternalMedia(): void {
         if (!this.ctx || !this.analyser || !this.mediaEl) return;
+        // NEVER capture into a suspended context: capture permanently reroutes
+        // the element, and a dead context silences it (mobile screen
+        // lock/interruption). While suspended the element stays audible via
+        // the hardware path; defer the tap until the context is running.
+        if (this.ctx.state !== 'running') {
+            this.ctx.removeEventListener('statechange', this.onCtxState);
+            this.ctx.addEventListener('statechange', this.onCtxState, { once: true });
+            return;
+        }
         if (!this.mediaSrc) {
             // Once tapped, the element's audio flows ONLY through this
             // context, so it must also reach the destination to stay audible.
@@ -226,6 +244,65 @@ export class AudioReactiveEngine {
             this.mediaSrc.connect(this.ctx.destination);
         }
         this.tapToAnalyser(this.mediaSrc);
+    }
+
+    // --- music playback rescue (mobile) ---
+    // On phones, a captured element whose context got suspended (screen
+    // lock, app switch, interruption, lost gesture race) plays SILENTLY:
+    // play() resolves while every sample lands in a dead graph.
+
+    /** True once the music element's output has been captured into this
+     *  context (its sound now depends on this context being running). */
+    isMediaCaptured(): boolean {
+        return !!this.mediaSrc;
+    }
+
+    /** Resume the captured context from a user gesture. MUST be called
+     *  synchronously inside the play-button handler (do not await it before
+     *  element.play() — the gesture must not be broken on iOS). */
+    unlockMediaForPlayback(): void {
+        if (this.mediaSrc && this.ctx?.state === 'suspended') {
+            void this.ctx.resume().catch(() => { /* retried by the watchdog */ });
+        } else if (this.ctx?.state === 'suspended' && this.enabled && this.source === 'internal') {
+            // Not captured yet but listening internally: wake the context so
+            // the deferred tap can complete on statechange.
+            void this.ctx.resume().catch(() => { /* no-op */ });
+        }
+    }
+
+    /** Drop the element binding entirely. The player remounts a fresh,
+     *  uncaptured element which then routes through the hardware path
+     *  again. Internal listening re-taps lazily via registerMediaElement. */
+    releaseMediaBinding(): void {
+        if (this.mediaSrc) {
+            try { this.mediaSrc.disconnect(); } catch { /* stale */ }
+            this.mediaSrc = null;
+        }
+        this.mediaEl = null;
+    }
+
+    /** A dedicated analyser tapped on the captured media source, for the
+     *  player's silence watchdog: raw time-domain samples of what the
+     *  captured pipeline is actually delivering (null while uncaptured —
+     *  an uncaptured element plays through hardware and needs no watch). */
+    private probeAnalyser: AnalyserNode | null = null;
+    private probeSink: GainNode | null = null;
+    private probeBuf = new Float32Array(256);
+
+    getMediaSilenceProbe(): Float32Array | null {
+        if (!this.mediaSrc || !this.ctx) return null;
+        if (!this.probeAnalyser) {
+            this.probeAnalyser = this.ctx.createAnalyser();
+            this.probeAnalyser.fftSize = 512;
+            // A dead-end node never renders in Chrome — mirror the main
+            // analyser's zero-gain sink so the probe actually receives data.
+            this.probeSink = this.ctx.createGain();
+            this.probeSink.gain.value = 0;
+            this.probeAnalyser.connect(this.probeSink).connect(this.ctx.destination);
+            try { this.mediaSrc.connect(this.probeAnalyser); } catch { /* already */ }
+        }
+        this.probeAnalyser.getFloatTimeDomainData(this.probeBuf);
+        return this.probeBuf;
     }
 
     /**

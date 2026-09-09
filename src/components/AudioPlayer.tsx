@@ -18,6 +18,19 @@ const AudioPlayer: React.FC = () => {
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    /** Monotonic key forcing a fresh <audio> element on rescue — a remount
+     *  escapes the Listening Bone's MediaElementSource capture, which a
+     *  suspended mobile context otherwise silences forever. */
+    const [elemKey, setElemKey] = useState(0);
+    /** True for one remount after a rescue: the fresh element must resume
+     *  playback itself (the old element is permanently rerouted and mute). */
+    const [autoResume, setAutoResume] = useState(false);
+    /** Staged rescue: 0 = healthy, 1 = resume attempted, awaiting re-probe. */
+    const rescueStageRef = useRef(0);
+    /** Silence-watchdog handle: detects play()-but-no-sound on mobile. */
+    const watchdogRef = useRef<number | null>(null);
+    const reactive = getAudioReactiveEngine();
     const engine = getBinauralEngine();
     const [beatMode, setBeatMode] = useState<BeatMode>('binaural');
     const [presetKey, setPresetKey] = useState('theta');
@@ -29,20 +42,97 @@ const AudioPlayer: React.FC = () => {
         }
     }, [volume]);
 
+    // On rescue remount: resume playback on the fresh element (the old one
+    // is permanently rerouted and mute) and reset the one-shot flag.
+    useEffect(() => {
+        const el = audioRef.current;
+        if (!autoResume || !el) return;
+        setAutoResume(false);
+        el.volume = volume;
+        el.play()
+            .then(() => {
+                setIsPlaying(true);
+                startWatchdog();
+            })
+            .catch(() => setIsPlaying(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoResume, elemKey]);
+
     // Offer the music element to the Listening Bone's internal source.
     // The element is remounted on track change (key=), so re-register then.
     useEffect(() => {
         getAudioReactiveEngine().registerMediaElement(audioRef.current);
     }, [currentTrack, tracks.length]);
 
-    const togglePlay = () => {
-        if (!audioRef.current) return;
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play().catch(console.error);
+    /** Disarm the silence watchdog if it is running. */
+    const clearWatchdog = () => {
+        if (watchdogRef.current !== null) {
+            window.clearInterval(watchdogRef.current);
+            watchdogRef.current = null;
         }
-        setIsPlaying(!isPlaying);
+    };
+
+    /** While playing, sample the element's real output level every 2s. If
+     *  the pipeline is delivering samples but the analyser hears silence,
+     *  a suspended captured context is eating the sound (mobile) — rescue
+     *  by remounting a fresh, uncaptured element in place.
+     *  NOTE: measured on the raw time-domain data, not the engine's
+     *  smoothed 0..1 bands, so it cannot be fooled by the release smoothing. */
+    const startWatchdog = () => {
+        clearWatchdog();
+        watchdogRef.current = window.setInterval(() => {
+            const el = audioRef.current;
+            if (!el || el.paused || el.muted || el.volume === 0) return;
+            const data = reactive.getMediaSilenceProbe();
+            if (!data) return; // not captured → plays through hardware, no watch needed
+            let peak = 0;
+            for (let i = 0; i < data.length; i += 4) peak = Math.max(peak, Math.abs(data[i]));
+            if (peak >= 0.0005) {
+                rescueStageRef.current = 0; // audible again
+                return;
+            }
+            if (rescueStageRef.current === 0) {
+                // Stage 1: the captured context is suspended — try waking it
+                // (no gesture here, but mobile engines often allow resume
+                // once playback started). Re-probe on the next tick.
+                rescueStageRef.current = 1;
+                reactive.unlockMediaForPlayback();
+                return;
+            }
+            // Stage 2: still silent → the context is unrescuable. Unbind the
+            // captured element and remount a fresh uncaptured one that plays
+            // through the hardware path again.
+            rescueStageRef.current = 0;
+            reactive.releaseMediaBinding();
+            clearWatchdog();
+            setAutoResume(true);
+            setElemKey(k => k + 1);
+        }, 2000);
+    };
+
+    const togglePlay = () => {
+        const el = audioRef.current;
+        if (!el) return;
+        if (isPlaying) {
+            el.pause();
+            clearWatchdog();
+            setIsPlaying(false);
+        } else {
+            // INSIDE the gesture: wake a suspended captured context (screen
+            // lock / interruption / lost gesture race leave it dead on
+            // mobile) so play() becomes audible instead of silently flowing
+            // into a dead graph.
+            getAudioReactiveEngine().unlockMediaForPlayback();
+            el.play().then(() => {
+                setIsPlaying(true);
+                startWatchdog();
+            }).catch(() => {
+                // Autoplay-policy rejection: keep the button honest ("Play
+                // Music"), do not flip to Pause with nothing sounding.
+                setIsPlaying(false);
+                clearWatchdog();
+            });
+        }
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,11 +203,15 @@ const AudioPlayer: React.FC = () => {
             engine.stop();
             setIsPlaying(false);
             setIsTonePlaying(false);
+            clearWatchdog();
         };
         window.addEventListener('chaos-banish', onBanish);
         return () => window.removeEventListener('chaos-banish', onBanish);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Never leak the watchdog across unmounts or track changes.
+    useEffect(() => () => clearWatchdog(), []);
 
     return (
         <div className="audio-section">
@@ -198,10 +292,10 @@ const AudioPlayer: React.FC = () => {
             </div>
 
             <audio
-                key={tracks[currentTrack]?.url}
+                key={elemKey + '-' + (tracks[currentTrack]?.url || '')}
                 ref={audioRef}
                 src={tracks[currentTrack]?.url}
-                onEnded={() => setIsPlaying(false)}
+                onEnded={() => { setIsPlaying(false); clearWatchdog(); }}
             />
         </div>
     );

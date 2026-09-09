@@ -119,13 +119,17 @@ body {
   box-shadow: inset 2px 2px 0 #000, 0 0 0 1px #1a0000;
 }
 
-/* CRT scanlines over the fractal viewport */
+/* CRT scanlines over the fractal viewport — intensity mirrors the
+   scanlines effect slider via --crt-opacity (set inline by App.tsx), so
+   the overlay vanishes completely when the effect is off. */
 .fractal-canvas-container::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: var(--scanlines);
+  opacity: var(--crt-opacity, 0);
+  transition: opacity 120ms linear;
   z-index: 4;
 }
 
@@ -2832,11 +2836,18 @@ a.mini {
 
 .info-tooltip {
   visibility: hidden;
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
+  /* Fixed-position and fully placed by lib/tooltipClamp.ts (mouse hover
+     AND touch tap), so the bubble is always clamped inside the viewport
+     and flipped below its icon when it would clip the top of the screen. */
+  position: fixed;
+  left: 0;
+  top: 0;
+  /* Shrink-to-fit, capped to the viewport: text always fits the box, and
+     long unbreakable tokens (seed hashes, URLs) wrap instead of spilling. */
+  width: max-content;
+  max-width: min(280px, calc(100vw - 16px));
+  overflow-wrap: anywhere;
+  word-break: break-word;
   background: var(--panel-bg-solid);
   border: 2px solid;
   border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
@@ -2854,16 +2865,11 @@ a.mini {
   font-family: var(--font-family);
 }
 
-/* Sidebar tooltips: the ? icons sit near the right edge, so centering a
-   240px tooltip overflows the panel (and used to force a horizontal
-   scrollbar). Nudge left so the bubble fits inside the sidebar. */
-.sidebar .info-tooltip {
-  left: calc(50% - 16px);
-}
-
-/* The DATA WARNING bubble sits furthest right; it needs the full nudge. */
-.sidebar .info-box-container.warning .info-tooltip {
-  left: calc(50% - 34px);
+/* Visibility is owned by the clamp library via this class, so the same
+   placement code runs for hover and touch before the bubble fades in. */
+.info-box-container.show-tip .info-tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 .info-tooltip h4 {
@@ -2874,9 +2880,11 @@ a.mini {
   text-shadow: 0 0 6px var(--accent-glow);
 }
 
-.info-box-container:hover .info-tooltip {
-  visibility: visible;
-  opacity: 1;
+/* The oracle bar renders its values with white-space: nowrap; without this
+   the tooltip body inherits it and long text spills past the bubble. */
+.info-tooltip,
+.info-tooltip * {
+  white-space: normal;
 }
 
 /* Inside a feature group the icon sits glued to its value; the group gap
@@ -2907,10 +2915,6 @@ a.mini {
 
 .info-tooltip.warning {
   border-color: #ff4444 var(--border-dark) var(--border-dark) #ff4444;
-  width: 220px;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 125%;
 }
 
 .info-tooltip.warning h4 {
@@ -2980,17 +2984,6 @@ a.mini {
   .oracle-bar .info-box-container {
     margin-left: 0.1rem;
     margin-right: 0.5rem;
-  }
-
-  .oracle-bar .info-tooltip {
-    width: 200px;
-  }
-
-  /* Specifically fix the second (Synchronicity) tooltip from going off-screen to the right */
-  .oracle-data .info-box-container:last-child .info-tooltip {
-    left: auto;
-    right: 0;
-    transform: none;
   }
 
   .sigil-scribe-modal {

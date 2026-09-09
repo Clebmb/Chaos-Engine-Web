@@ -1,0 +1,48 @@
+npm notice run webapp@0.0.0 dev
+npm notice run vite
+[2m5:19:50 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 1 error:
+C:/Users/cleb/Documents/Projects/Chaos Engine/Chaos-Engine-Web/src/components/Grimoire.tsx:496:116: ERROR: The character "}" is not valid inside a JSX element[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mC:/Users/cleb/Documents/Projects/Chaos Engine/Chaos-Engine-Web/src/components/Grimoire.tsx[39m:477:116
+[33m  
+  [33mThe character "}" is not valid inside a JSX element[33m
+  494|                      🍖 Feed</button>
+  495|                                                  ? <button className="mini secondary" onClick={() => rec.ritualLink && onEngage(rec.ritualLink)}>Home World</button>
+  496|                                                  : <button className="mini secondary" disabled>No Home World</button>}
+     |                                                                                                                      ^
+  497|                                              <button className="mini secondary" onClick={() => remove(rec)}>Dismiss</button>
+  498|                                          </div>
+  [39m
+      at failureErrorWithLog (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:1467:15)
+      at C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:736:50
+      at responseCallbacks.<computed> (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:603:9)
+      at handleIncomingPacket (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:658:12)
+      at Socket.readFromStdout (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:581:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[2m5:19:50 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 1 error:
+C:/Users/cleb/Documents/Projects/Chaos Engine/Chaos-Engine-Web/src/components/Grimoire.tsx:496:116: ERROR: The character "}" is not valid inside a JSX element[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mC:/Users/cleb/Documents/Projects/Chaos Engine/Chaos-Engine-Web/src/components/Grimoire.tsx[39m:477:116
+[33m  
+  [33mThe character "}" is not valid inside a JSX element[33m
+  494|                      🍖 Feed</button>
+  495|                                                  ? <button className="mini secondary" onClick={() => rec.ritualLink && onEngage(rec.ritualLink)}>Home World</button>
+  496|                                                  : <button className="mini secondary" disabled>No Home World</button>}
+     |                                                                                                                      ^
+  497|                                              <button className="mini secondary" onClick={() => remove(rec)}>Dismiss</button>
+  498|                                          </div>
+  [39m
+      at failureErrorWithLog (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:1467:15)
+      at C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:736:50
+      at responseCallbacks.<computed> (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:603:9)
+      at handleIncomingPacket (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:658:12)
+      at Socket.readFromStdout (C:\Users\cleb\Documents\Projects\Chaos Engine\Chaos-Engine-Web\node_modules\esbuild\lib\main.js:581:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)

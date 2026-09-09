@@ -288,7 +288,10 @@ const App: React.FC = () => {
       let center = s.center;
       let zoom = s.zoom;
       const scry = scryingRef.current ? scryRef.current : null;
-      if (scrying && scry) {
+      // Read only the ref here — the `scrying` state variable is not in this
+      // callback's deps, so reading it directly reintroduces the stale
+      // closure that once disabled the entire descent.
+      if (scry) {
         if (effectiveAnimating) scry.elapsed += dt;
         const t = Math.min(1, scry.elapsed / SCRY_FLYIN_SECONDS);
         // smoothstep the fly-in so the approach eases onto the target
@@ -1528,7 +1531,7 @@ const App: React.FC = () => {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'none', ['--crt-opacity' as string]: String(state.effects.scanlines) }}
         >
           <canvas ref={canvasRef} />
           <BreathPacer pattern={breathPattern} onAbort={() => setBreathPattern('off')} />
