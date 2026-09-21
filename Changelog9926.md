@@ -1,6 +1,5 @@
 # Changelog9926
 
-Every change made to **Sigil Scribe / Chaos Engine**, starting with the React95 UI conversion, in the order they were made.
 
 - Converted the entire UI theme to **React95-style UI elements** — dark red and black, mostly black with red outlines and text — reworking all components to the retro Windows 95 aesthetic (beveled borders, chunky controls, title bars).
 - Brightened the darker red text that was too hard to read against the black background.
