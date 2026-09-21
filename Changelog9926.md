@@ -9,7 +9,6 @@
 - Added a collapsible sidebar on desktop.
 - Fixed the sidebar collapse arrow directions on desktop (right when uncollapsed, left when collapsed, after initially building them swapped); mobile arrows point up when uncollapsed and down when collapsed.
 - Changed the `https://clebmb.pages.dev` link to `https://caleb.website`.
-- Removed ".EXE" after "SIGIL SCRIBE".
 - Removed the weird red glitchy-looking artifacts that appeared next to the "X" (close) button when Sigil Scribe was open.
 - Expanded the Sigil Drawer with **visual options** to change the colors, effects, and look of the drawn sigil.
 - Made the final output when charging a sigil as an overlay use a **transparent background**, on by default, with the option to turn it off and pick a custom background color.
